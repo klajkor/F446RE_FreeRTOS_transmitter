@@ -23,5 +23,5 @@ Demonstration of different FreeRTOS capabilities via a simple code example
 ## Technical details
 * Board: STM32 Nucleo-F446RE 
 * Toolchain: STM32CubeIDE Version: 1.5.1 (C) 2020 STMicroelectronics ALL RIGHTS RESERVED
-* Middleware: FreeRTOS v10.2.1 CMSIS v2
+* Middleware: FreeRTOS v10.2.1 CMSIS v2 Copyright (C) Amazon Web Services, Inc. or its affiliates. All rights reserved.
 
