@@ -1,0 +1,14 @@
+#STM32 CUBEIDE gitignore
+
+#Debug folder
+/**/Debug/*
+!/**/Debug/*.hex
+!/**/Debug/*.bin
+/.metadata/*
+*.xml
+/.metadata/
+*.launch
+*.dis
+*.html
+.launches
+.cache
