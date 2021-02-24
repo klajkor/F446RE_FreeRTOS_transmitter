@@ -34,6 +34,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define Button_Port GPIOC
+#define Button_Pin  GPIO_PIN_0
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -300,6 +303,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PC0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
   /*Configure GPIO pin : LD2_Pin */
   GPIO_InitStruct.Pin = LD2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -329,7 +338,7 @@ void StartButtonRead(void *argument)
 	for(;;)
 	{
 		semaCount_b = osSemaphoreGetCount(ButtonSemaphoreHandle);
-		if(HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin))
+		if(HAL_GPIO_ReadPin(Button_Port, Button_Pin))
 		{
 			// Button released
 			if (semaCount_b > 0)
@@ -353,9 +362,10 @@ void StartButtonRead(void *argument)
 				HAL_UART_Transmit(&huart2, Data, size, HAL_MAX_DELAY);
 				HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
 			}
+			osDelay(0);
 
 		}
-		osDelay(1);
+		osDelay(100);
 	}
   /* USER CODE END 5 */
 }
