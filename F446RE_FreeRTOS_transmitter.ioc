@@ -2,7 +2,7 @@
 FREERTOS.BinarySemaphores01=ButtonSemaphore,Dynamic,NULL
 FREERTOS.FootprintOK=true
 FREERTOS.IPParameters=Tasks01,FootprintOK,BinarySemaphores01
-FREERTOS.Tasks01=buttonRead,24,128,StartButtonRead,Default,NULL,Dynamic,NULL,NULL;LEDswitcher,8,128,StartLEDswitcher,Default,NULL,Dynamic,NULL,NULL
+FREERTOS.Tasks01=buttonRead,40,128,StartButtonRead,Default,NULL,Dynamic,NULL,NULL;LEDswitcher,16,128,StartLEDswitcher,Default,NULL,Dynamic,NULL,NULL;transmitUARTmes,32,128,StartTransmitUARTmessage,Default,NULL,Dynamic,NULL,NULL;ADCvoltageRead,24,128,StartADCvoltageRead,Default,NULL,Dynamic,NULL,NULL
 File.Version=6
 KeepUserPlacement=false
 Mcu.Family=STM32F4
