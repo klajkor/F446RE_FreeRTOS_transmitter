@@ -45,6 +45,7 @@
 #define ADC_CH1_Port GPIOA
 #define ADC_CH1_Pin  GPIO_PIN_0 // CN8 A0 pin
 #define ADC_Voltage_Poll_Delay 200U // in millisec
+#define INCLUDE_RAW_ADC_IN_MESSAGE 0
 //#define DAC_Port GPIOA
 //#define DAC_Pin  GPIO_PIN_4 // CN8 A2 pin
 
@@ -324,14 +325,14 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.ScanConvMode = DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.NbrOfConversion = 1;
   hadc1.Init.DMAContinuousRequests = DISABLE;
-  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
     Error_Handler();
@@ -340,7 +341,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_112CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -447,9 +448,10 @@ void testADC1(void)
 	size = sprintf((char *)txt, "ADC TEST loop started");
 	HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
 	HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
+	HAL_ADC_Start(&hadc1);
 	for(testrun=1;testrun<=10;testrun++)
 	{
-		HAL_ADC_Start(&hadc1);
+		//HAL_ADC_Start(&hadc1);
 		if (HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
 		{
 			size = sprintf((char *)txt, "ADC Test Poll OK");
@@ -471,9 +473,10 @@ void testADC1(void)
 			HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
 			HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
 		}
-		HAL_ADC_Stop(&hadc1);
+		//HAL_ADC_Stop(&hadc1);
 		HAL_Delay(500);
 	}
+	HAL_ADC_Stop(&hadc1);
 	size = sprintf((char *)txt, "ADC TEST loop completed");
 	HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
 	HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
@@ -617,22 +620,26 @@ void StartADCvoltageRead(void *argument)
 	size = sprintf((char *)txt, "ADC task started");
 	HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
 	HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
+	/* ADC in single channel continuous conversion mode, EOC flag at the end of all conversions */
+	HAL_ADC_Start(&hadc1);
 	for(;;)
 	{
-		HAL_ADC_Start(&hadc1);
 		if (HAL_ADC_PollForConversion(&hadc1, 2) == HAL_OK)
 		{
 			raw = HAL_ADC_GetValue(&hadc1);
-			sprintf((char *)ADC_Message.Payload, "raw: %lu", raw);
-			if(pdTRUE == xQueueSend(UART_Queue_Handle, &ADC_Message, 10))
+			if(INCLUDE_RAW_ADC_IN_MESSAGE)
 			{
-				osDelay(1);
-			}
-			else
-			{
-				size = sprintf((char *)txt, "ADC Q Send ERROR");
-				HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
-				HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
+				sprintf((char *)ADC_Message.Payload, "raw: %lu", raw);
+				if(pdTRUE == xQueueSend(UART_Queue_Handle, &ADC_Message, 10))
+				{
+					osDelay(1);
+				}
+				else
+				{
+					size = sprintf((char *)txt, "ADC Q Send ERROR");
+					HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
+					HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
+				}
 			}
 			milliVolt=(uint32_t)((3300*raw)/4095);
 			sprintf((char *)ADC_Message.Payload, "%lu mV", milliVolt);
@@ -653,7 +660,7 @@ void StartADCvoltageRead(void *argument)
 			HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
 			HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
 		}
-		HAL_ADC_Stop(&hadc1);
+		//HAL_ADC_Stop(&hadc1);
 		osDelay(ADC_Voltage_Poll_Delay);
 	}
   /* USER CODE END StartADCvoltageRead */
