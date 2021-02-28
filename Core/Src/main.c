@@ -39,13 +39,14 @@
 #define Button_Pin  GPIO_PIN_0 // CN8 A5 pin
 #define Signal_Port GPIOC
 #define Signal_Pin  GPIO_PIN_1 // CN8 A4 pin
-#define Signal_High_Duration 90U // in millisec
-#define Signal_Low_Duration 20U // in millisec
+#define Signal_High_Duration 241U // in millisec
+#define Signal_Low_Duration 33U // in millisec
 #define Button_Debounce_Delay 80U  // in millisec
 #define ADC_CH1_Port GPIOA
 #define ADC_CH1_Pin  GPIO_PIN_0 // CN8 A0 pin
-#define DAC_Port GPIOA
-#define DAC_Pin  GPIO_PIN_4 // CN8 A2 pin
+#define ADC_Voltage_Poll_Delay 200U // in millisec
+//#define DAC_Port GPIOA
+//#define DAC_Pin  GPIO_PIN_4 // CN8 A2 pin
 
 
 /* USER CODE END PD */
@@ -85,14 +86,14 @@ const osThreadAttr_t transmitUARTmes_attributes = {
 osThreadId_t ADCvoltageReadHandle;
 const osThreadAttr_t ADCvoltageRead_attributes = {
   .name = "ADCvoltageRead",
-  .priority = (osPriority_t) osPriorityRealtime,
+  .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 256 * 4
 };
 /* Definitions for ButtonTestSigna */
 osThreadId_t ButtonTestSignaHandle;
 const osThreadAttr_t ButtonTestSigna_attributes = {
   .name = "ButtonTestSigna",
-  .priority = (osPriority_t) osPriorityHigh,
+  .priority = (osPriority_t) osPriorityBelowNormal,
   .stack_size = 128 * 4
 };
 /* Definitions for myQueue01 */
@@ -132,6 +133,8 @@ void StartADCvoltageRead(void *argument);
 void StartButtonTestSignal(void *argument);
 
 /* USER CODE BEGIN PFP */
+
+void testADC1(void);
 
 /* USER CODE END PFP */
 
@@ -173,11 +176,16 @@ int main(void)
   /* USER CODE BEGIN 2 */
 	sprintf(crlf, "\r\n");
 	HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
+
+	/* Create queue for UART messages */
 	UART_Queue_Handle=xQueueCreate( 20, sizeof( MessageBuffer_t) );
 	if (UART_Queue_Handle == 0)
 	{
 		Error_Handler();
 	}
+
+	/* Test ADC conversion before the FreeRTOS kernel starts */
+	testADC1();
 
   /* USER CODE END 2 */
 
@@ -427,6 +435,50 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+void testADC1(void)
+{
+	uint8_t txt[32];
+	uint8_t testrun;
+	uint32_t raw=0;
+	int size;
+	uint32_t milliVolt=0;
+	MessageBuffer_t ADC_Message;
+	sprintf((char *)ADC_Message.Header, "V:");
+	size = sprintf((char *)txt, "ADC TEST loop started");
+	HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
+	for(testrun=1;testrun<=10;testrun++)
+	{
+		HAL_ADC_Start(&hadc1);
+		if (HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
+		{
+			size = sprintf((char *)txt, "ADC Test Poll OK");
+			HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
+			HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
+			raw=0;
+			raw = HAL_ADC_GetValue(&hadc1);
+			size = sprintf((char *)ADC_Message.Payload, "(%u) raw: %lu", testrun, raw);
+			HAL_UART_Transmit(&huart2, (uint8_t*)ADC_Message.Payload, size, HAL_MAX_DELAY);
+			HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
+			milliVolt=(uint32_t)((3300*raw)/4095);
+			size = sprintf((char *)ADC_Message.Payload, "(%u) %lu mV", testrun, milliVolt);
+			HAL_UART_Transmit(&huart2, (uint8_t*)ADC_Message.Payload, size, HAL_MAX_DELAY);
+			HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
+		}
+		else
+		{
+			size = sprintf((char *)txt, "ADC Test Poll ERROR");
+			HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
+			HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
+		}
+		HAL_ADC_Stop(&hadc1);
+		HAL_Delay(500);
+	}
+	size = sprintf((char *)txt, "ADC TEST loop completed");
+	HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
+}
+
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartButtonRead */
@@ -451,33 +503,24 @@ void StartButtonRead(void *argument)
 		semaCount_b = osSemaphoreGetCount(ButtonSemaphoreHandle);
 		if(HAL_GPIO_ReadPin(Button_Port, Button_Pin))
 		{
-			// Button released
+			/* Button released */
 			if (semaCount_b > 0)
 			{
 				buttonSemaphoreStatus = osSemaphoreAcquire(ButtonSemaphoreHandle, 10U);
 				semaCount_b = osSemaphoreGetCount(ButtonSemaphoreHandle);
-				//size = sprintf((char *)Data, "Released");
-				//HAL_UART_Transmit(&huart2, Data, size, HAL_MAX_DELAY);
-				//HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
 			}
 		}
 		else
 		{
-			// Button pushed
+			/* Button pushed */
 			if (semaCount_b == 0)
 			{
 				buttonSemaphoreStatus = osSemaphoreRelease(ButtonSemaphoreHandle);
 				semaCount_b = osSemaphoreGetCount(ButtonSemaphoreHandle);
-				//size = sprintf((char *)Data, "Pushed");
-				//HAL_UART_Transmit(&huart2, Data, size, HAL_MAX_DELAY);
-				//HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
 				sprintf((char *)buttonMessage.Payload, "Pressed %05lu", i);
 				if(pdTRUE == xQueueSend(UART_Queue_Handle, &buttonMessage, 0))
 				{
 					osDelay(0);
-					//size = sprintf((char *)Data, "Queue Send Success");
-					//HAL_UART_Transmit(&huart2, Data, size, HAL_MAX_DELAY);
-					//HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
 				}
 				else
 				{
@@ -508,28 +551,21 @@ void StartLEDswitcher(void *argument)
 	uint32_t semaCount, prevCount;
 	semaCount = osSemaphoreGetCount(ButtonSemaphoreHandle);
 	prevCount = semaCount;
-	//size = sprintf((char *)Data, "S: %03i", (int)semaCount);
-	//HAL_UART_Transmit(&huart2, Data, size, HAL_MAX_DELAY);
-	//HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
 	for(;;)
 	{
 		semaCount = osSemaphoreGetCount(ButtonSemaphoreHandle);
 		if (semaCount != prevCount)
 		{
-			//size = sprintf((char *)Data, "S: %03i", (int)semaCount);
-			//HAL_UART_Transmit(&huart2, Data, size, HAL_MAX_DELAY);
-			//HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
 			prevCount = semaCount;
-		}
-		if (semaCount > 0)
-		{
-			HAL_GPIO_WritePin(GPIOA, LD2_Pin, GPIO_PIN_SET);
-			osDelay(5);
-		}
-		else
-		{
-			HAL_GPIO_WritePin(GPIOA, LD2_Pin, GPIO_PIN_RESET);
-			osDelay(5);
+			if (semaCount > 0)
+			{
+				HAL_GPIO_WritePin(GPIOA, LD2_Pin, GPIO_PIN_SET);
+			}
+			else
+			{
+				HAL_GPIO_WritePin(GPIOA, LD2_Pin, GPIO_PIN_RESET);
+			}
+			osDelay(1);
 		}
 		osDelay(1);
 	}
@@ -572,32 +608,37 @@ void StartADCvoltageRead(void *argument)
 {
   /* USER CODE BEGIN StartADCvoltageRead */
 	/* Infinite loop */
-	uint8_t txt[64];
+	uint8_t txt[32];
 	uint32_t raw=0;
-	//uint32_t milliVolt=0;
-	//float milliVolt_f=0;
+	int size;
+	uint32_t milliVolt=0;
 	MessageBuffer_t ADC_Message;
 	sprintf((char *)ADC_Message.Header, "V:");
-	HAL_ADC_Start(&hadc1);
-	size = sprintf((char *)txt, "ADC started");
+	size = sprintf((char *)txt, "ADC task started");
 	HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
 	HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
 	for(;;)
 	{
-		if (HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
+		HAL_ADC_Start(&hadc1);
+		if (HAL_ADC_PollForConversion(&hadc1, 2) == HAL_OK)
 		{
-			size = sprintf((char *)txt, "ADC Poll OK");
-			HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
-			HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
-			raw=0;
-			//raw = HAL_ADC_GetValue(&hadc1);
+			raw = HAL_ADC_GetValue(&hadc1);
 			sprintf((char *)ADC_Message.Payload, "raw: %lu", raw);
 			if(pdTRUE == xQueueSend(UART_Queue_Handle, &ADC_Message, 10))
 			{
 				osDelay(1);
-				//size = sprintf((char *)Data, "Queue Send Success");
-				//HAL_UART_Transmit(&huart2, Data, size, HAL_MAX_DELAY);
-				//HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
+			}
+			else
+			{
+				size = sprintf((char *)txt, "ADC Q Send ERROR");
+				HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
+				HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
+			}
+			milliVolt=(uint32_t)((3300*raw)/4095);
+			sprintf((char *)ADC_Message.Payload, "%lu mV", milliVolt);
+			if(pdTRUE == xQueueSend(UART_Queue_Handle, &ADC_Message, 10))
+			{
+				osDelay(1);
 			}
 			else
 			{
@@ -612,7 +653,8 @@ void StartADCvoltageRead(void *argument)
 			HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
 			HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
 		}
-		osDelay(200);
+		HAL_ADC_Stop(&hadc1);
+		osDelay(ADC_Voltage_Poll_Delay);
 	}
   /* USER CODE END StartADCvoltageRead */
 }
