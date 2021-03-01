@@ -439,7 +439,7 @@ static void MX_GPIO_Init(void)
 void testADC1(void)
 {
 	uint8_t txt[32];
-	uint8_t testrun;
+	uint8_t testrun,i;
 	uint32_t raw=0;
 	int size;
 	uint32_t milliVolt=0;
@@ -452,27 +452,35 @@ void testADC1(void)
 	for(testrun=1;testrun<=10;testrun++)
 	{
 		//HAL_ADC_Start(&hadc1);
-		if (HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
+		raw=0;
+		for(i=0;i<4;i++)
 		{
-			size = sprintf((char *)txt, "ADC Test Poll OK");
-			HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
-			HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
-			raw=0;
-			raw = HAL_ADC_GetValue(&hadc1);
-			size = sprintf((char *)ADC_Message.Payload, "(%u) raw: %lu", testrun, raw);
-			HAL_UART_Transmit(&huart2, (uint8_t*)ADC_Message.Payload, size, HAL_MAX_DELAY);
-			HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
-			milliVolt=(uint32_t)((3300*raw)/4095);
-			size = sprintf((char *)ADC_Message.Payload, "(%u) %lu mV", testrun, milliVolt);
-			HAL_UART_Transmit(&huart2, (uint8_t*)ADC_Message.Payload, size, HAL_MAX_DELAY);
-			HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
+			if (HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
+			{
+				size = sprintf((char *)txt, "(%u) ADC Test Poll OK - %u", testrun, i);
+				HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
+				HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
+				raw = raw + HAL_ADC_GetValue(&hadc1);
+
+			}
+			else
+			{
+				size = sprintf((char *)txt, "(%u) ADC Test Poll ERROR - %u", testrun, i);
+				HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
+				HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
+				i--;
+			}
+			HAL_Delay(1);
+
 		}
-		else
-		{
-			size = sprintf((char *)txt, "ADC Test Poll ERROR");
-			HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
-			HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
-		}
+		raw = raw >> 2;
+		size = sprintf((char *)ADC_Message.Payload, "(%u) raw: %lu", testrun, raw);
+		HAL_UART_Transmit(&huart2, (uint8_t*)ADC_Message.Payload, size, HAL_MAX_DELAY);
+		HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
+		milliVolt=(uint32_t)((3300*raw)/4095);
+		size = sprintf((char *)ADC_Message.Payload, "(%u) %lu mV", testrun, milliVolt);
+		HAL_UART_Transmit(&huart2, (uint8_t*)ADC_Message.Payload, size, HAL_MAX_DELAY);
+		HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
 		//HAL_ADC_Stop(&hadc1);
 		HAL_Delay(500);
 	}
@@ -612,6 +620,7 @@ void StartADCvoltageRead(void *argument)
   /* USER CODE BEGIN StartADCvoltageRead */
 	/* Infinite loop */
 	uint8_t txt[32];
+	uint8_t cycle;
 	uint32_t raw=0;
 	int size;
 	uint32_t milliVolt=0;
@@ -624,25 +633,27 @@ void StartADCvoltageRead(void *argument)
 	HAL_ADC_Start(&hadc1);
 	for(;;)
 	{
-		if (HAL_ADC_PollForConversion(&hadc1, 2) == HAL_OK)
+		cycle=0;
+		raw=0;
+		while(cycle<4)
 		{
-			raw = HAL_ADC_GetValue(&hadc1);
-			if(INCLUDE_RAW_ADC_IN_MESSAGE)
+			if (HAL_ADC_PollForConversion(&hadc1, 2) == HAL_OK)
 			{
-				sprintf((char *)ADC_Message.Payload, "raw: %lu", raw);
-				if(pdTRUE == xQueueSend(UART_Queue_Handle, &ADC_Message, 10))
-				{
-					osDelay(1);
-				}
-				else
-				{
-					size = sprintf((char *)txt, "ADC Q Send ERROR");
-					HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
-					HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
-				}
+				raw = raw + HAL_ADC_GetValue(&hadc1);
+				cycle++;
 			}
-			milliVolt=(uint32_t)((3300*raw)/4095);
-			sprintf((char *)ADC_Message.Payload, "%lu mV", milliVolt);
+			else
+			{
+				size = sprintf((char *)txt, "ADC Poll ERROR - %u", cycle);
+				HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
+				HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
+			}
+			osDelay(1);
+		}
+		raw=raw>>2;
+		if(INCLUDE_RAW_ADC_IN_MESSAGE)
+		{
+			sprintf((char *)ADC_Message.Payload, "raw: %lu", raw);
 			if(pdTRUE == xQueueSend(UART_Queue_Handle, &ADC_Message, 10))
 			{
 				osDelay(1);
@@ -654,9 +665,15 @@ void StartADCvoltageRead(void *argument)
 				HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
 			}
 		}
+		milliVolt=(uint32_t)((3300*raw)/4095);
+		sprintf((char *)ADC_Message.Payload, "%lu mV", milliVolt);
+		if(pdTRUE == xQueueSend(UART_Queue_Handle, &ADC_Message, 10))
+		{
+			osDelay(1);
+		}
 		else
 		{
-			size = sprintf((char *)txt, "ADC Poll ERROR");
+			size = sprintf((char *)txt, "ADC Q Send ERROR");
 			HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
 			HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
 		}
