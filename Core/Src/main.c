@@ -28,6 +28,8 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "semphr.h"
+#include "crc.h"
+#include "protocol.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,8 +48,11 @@
 #define Button_Debounce_Delay 80U  // in millisec
 #define ADC_CH1_Port GPIOA
 #define ADC_CH1_Pin  GPIO_PIN_0 // CN8 A0 pin
-#define ADC_Voltage_Poll_Delay 200U // in millisec
+#define ADC_Voltage_Poll_Delay 7531U // in millisec
 #define INCLUDE_RAW_ADC_IN_MESSAGE 0
+#define QUEUE_SEND_WAIT 10
+#define QUEUE_REC_WAIT 10
+
 //#define DAC_Port GPIOA
 //#define DAC_Pin  GPIO_PIN_4 // CN8 A2 pin
 
@@ -115,13 +120,12 @@ uint8_t Data[32];
 char crlf[3];
 osStatus_t buttonSemaphoreStatus;
 
-typedef struct
-{
-	char Header[3];
-	char Payload[21];
-} MessageBuffer_t;
+
 QueueHandle_t UART_Queue_Handle;
 SemaphoreHandle_t UART_Mutex_Handle;
+
+//unionFloatUint8_t testData;
+//messageFrame_t messageFrame;
 
 /* USER CODE END PV */
 
@@ -139,7 +143,8 @@ void StartButtonTestSignal(void *argument);
 /* USER CODE BEGIN PFP */
 
 void testADC1(void);
-BaseType_t xThread_Safe_UART_Transmit(uint8_t *pTransmitData);
+BaseType_t xThread_Safe_UART_Transmit(uint8_t *pTransmitData, uint8_t data_size);
+
 
 /* USER CODE END PFP */
 
@@ -183,7 +188,7 @@ int main(void)
 	HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
 
 	/* Create queue for UART messages */
-	UART_Queue_Handle=xQueueCreate( 20, sizeof( MessageBuffer_t) );
+	UART_Queue_Handle=xQueueCreate( 20, sizeof( messageFrame_t) );
 	if (UART_Queue_Handle == 0)
 	{
 		Error_Handler();
@@ -453,8 +458,7 @@ void testADC1(void)
 	uint32_t raw=0;
 	int size;
 	uint32_t milliVolt=0;
-	MessageBuffer_t ADC_Message;
-	sprintf((char *)ADC_Message.Header, "V:");
+
 	size = sprintf((char *)txt, "ADC TEST loop started");
 	HAL_UART_Transmit(&huart2, txt, size, HAL_MAX_DELAY);
 	HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
@@ -484,12 +488,12 @@ void testADC1(void)
 
 		}
 		raw = raw >> 2;
-		size = sprintf((char *)ADC_Message.Payload, "(%u) raw: %lu", testrun, raw);
-		HAL_UART_Transmit(&huart2, (uint8_t*)ADC_Message.Payload, size, HAL_MAX_DELAY);
+		size = sprintf((char *)txt, "(%u) raw: %lu", testrun, raw);
+		HAL_UART_Transmit(&huart2, (uint8_t*)txt, size, HAL_MAX_DELAY);
 		HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
 		milliVolt=(uint32_t)((3300*raw)/4095);
-		size = sprintf((char *)ADC_Message.Payload, "(%u) %lu mV", testrun, milliVolt);
-		HAL_UART_Transmit(&huart2, (uint8_t*)ADC_Message.Payload, size, HAL_MAX_DELAY);
+		size = sprintf((char *)txt, "(%u) %lu mV", testrun, milliVolt);
+		HAL_UART_Transmit(&huart2, (uint8_t*)txt, size, HAL_MAX_DELAY);
 		HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
 		//HAL_ADC_Stop(&hadc1);
 		HAL_Delay(500);
@@ -500,11 +504,9 @@ void testADC1(void)
 	HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
 }
 
-BaseType_t xThread_Safe_UART_Transmit(uint8_t *pTransmitData)
+BaseType_t xThread_Safe_UART_Transmit(uint8_t *pTransmitData, uint8_t data_size)
 {
-	uint16_t data_size;
 	BaseType_t Return_Value;
-	data_size = strlen((char *)pTransmitData);
 	if ((pTransmitData == NULL) || (data_size == 0U))
 	{
 		return  pdFAIL;
@@ -527,6 +529,8 @@ BaseType_t xThread_Safe_UART_Transmit(uint8_t *pTransmitData)
 	}
 	return Return_Value;
 }
+
+
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartButtonRead */
@@ -540,10 +544,9 @@ void StartButtonRead(void *argument)
 {
 	/* USER CODE BEGIN 5 */
 	/* Infinite loop */
-	uint32_t semaCount_b, i;
-	MessageBuffer_t buttonMessage;
-	i = 0;
-	sprintf((char *)buttonMessage.Header, "B:");
+	uint32_t semaCount_b;
+	unionFloatUint8_t BtnData;
+	messageFrame_t BtnMessageFrame;
 
 	for(;;)
 	{
@@ -553,8 +556,22 @@ void StartButtonRead(void *argument)
 			/* Button released */
 			if (semaCount_b > 0)
 			{
+				/* Semaphore not yet acquired */
 				buttonSemaphoreStatus = osSemaphoreAcquire(ButtonSemaphoreHandle, 10U);
 				semaCount_b = osSemaphoreGetCount(ButtonSemaphoreHandle);
+				memset((char *)BtnData.u8, 0, sizeof(BtnData.u8));
+				BtnData.u8[0]=FRAME_STATUS_OFF;
+				buildFrameToSend(FRAME_CMD_BTN_STATUS, BtnData, BtnMessageFrame);
+				if(pdTRUE == xQueueSend(UART_Queue_Handle, &BtnMessageFrame, QUEUE_SEND_WAIT))
+				{
+					osDelay(0);
+				}
+				else
+				{
+					sprintf((char *)Data, "B Q0 Send ERR");
+					xThread_Safe_UART_Transmit(Data, strlen((char *)Data));
+					xThread_Safe_UART_Transmit((uint8_t*)crlf, strlen(crlf));
+				}
 			}
 		}
 		else
@@ -562,20 +579,22 @@ void StartButtonRead(void *argument)
 			/* Button pushed */
 			if (semaCount_b == 0)
 			{
+				/* Semaphore not yet released */
 				buttonSemaphoreStatus = osSemaphoreRelease(ButtonSemaphoreHandle);
 				semaCount_b = osSemaphoreGetCount(ButtonSemaphoreHandle);
-				sprintf((char *)buttonMessage.Payload, "Pressed %05lu", i);
-				if(pdTRUE == xQueueSend(UART_Queue_Handle, &buttonMessage, 0))
+				memset((char *)BtnData.u8, 0, sizeof(BtnData.u8));
+				BtnData.u8[0]=FRAME_STATUS_ON;
+				buildFrameToSend(FRAME_CMD_BTN_STATUS, BtnData, BtnMessageFrame);
+				if(pdTRUE == xQueueSend(UART_Queue_Handle, &BtnMessageFrame, QUEUE_SEND_WAIT))
 				{
 					osDelay(0);
 				}
 				else
 				{
-					sprintf((char *)Data, "Queue Send ERROR");
-					xThread_Safe_UART_Transmit(Data);
-					xThread_Safe_UART_Transmit((uint8_t*)crlf);
+					sprintf((char *)Data, "B Q1 Send ERR");
+					xThread_Safe_UART_Transmit(Data, strlen((char *)Data));
+					xThread_Safe_UART_Transmit((uint8_t*)crlf, strlen(crlf));
 				}
-				i++;
 			}
 
 		}
@@ -596,6 +615,8 @@ void StartLEDswitcher(void *argument)
 	/* USER CODE BEGIN StartLEDswitcher */
 	/* Infinite loop */
 	uint32_t semaCount, prevCount;
+	unionFloatUint8_t LedData;
+	messageFrame_t LedMessageFrame;
 	semaCount = osSemaphoreGetCount(ButtonSemaphoreHandle);
 	prevCount = semaCount;
 	for(;;)
@@ -607,10 +628,36 @@ void StartLEDswitcher(void *argument)
 			if (semaCount > 0)
 			{
 				HAL_GPIO_WritePin(GPIOA, LD2_Pin, GPIO_PIN_SET);
+				memset((char *)LedData.u8, 0, sizeof(LedData.u8));
+				LedData.u8[0]=FRAME_STATUS_ON;
+				buildFrameToSend(FRAME_CMD_LED_STATUS, LedData, LedMessageFrame);
+				if(pdTRUE == xQueueSend(UART_Queue_Handle, &LedMessageFrame, QUEUE_SEND_WAIT))
+				{
+					osDelay(0);
+				}
+				else
+				{
+					sprintf((char *)Data, "L Q1 Send ERR");
+					xThread_Safe_UART_Transmit(Data, strlen((char *)Data));
+					xThread_Safe_UART_Transmit((uint8_t*)crlf, strlen(crlf));
+				}
 			}
 			else
 			{
 				HAL_GPIO_WritePin(GPIOA, LD2_Pin, GPIO_PIN_RESET);
+				memset((char *)LedData.u8, 0, sizeof(LedData.u8));
+				LedData.u8[0]=FRAME_STATUS_OFF;
+				buildFrameToSend(FRAME_CMD_LED_STATUS, LedData, LedMessageFrame);
+				if(pdTRUE == xQueueSend(UART_Queue_Handle, &LedMessageFrame, QUEUE_SEND_WAIT))
+				{
+					osDelay(0);
+				}
+				else
+				{
+					sprintf((char *)Data, "L Q0 Send ERR");
+					xThread_Safe_UART_Transmit(Data, strlen((char *)Data));
+					xThread_Safe_UART_Transmit((uint8_t*)crlf, strlen(crlf));
+				}
 			}
 			osDelay(1);
 		}
@@ -630,17 +677,12 @@ void StartTransmitUARTmessage(void *argument)
 {
 	/* USER CODE BEGIN StartTransmitUARTmessage */
 	/* Infinite loop */
-	MessageBuffer_t receivedMessage;
+	messageFrame_t receivedMessage;
 	for(;;)
 	{
-		if(xQueueReceive(UART_Queue_Handle, &receivedMessage, ( TickType_t ) 10) == pdPASS)
+		if(xQueueReceive(UART_Queue_Handle, &receivedMessage, ( TickType_t ) QUEUE_REC_WAIT) == pdPASS)
 		{
-			//HAL_UART_Transmit(&huart2, (uint8_t *)receivedMessage.Header, strlen((char *)receivedMessage.Header), HAL_MAX_DELAY);
-			xThread_Safe_UART_Transmit((uint8_t *)receivedMessage.Header);
-			//HAL_UART_Transmit(&huart2, (uint8_t *)receivedMessage.Payload, strlen((char *)receivedMessage.Payload), HAL_MAX_DELAY);
-			xThread_Safe_UART_Transmit((uint8_t *)receivedMessage.Payload);
-			//HAL_UART_Transmit(&huart2, (uint8_t *)crlf, sizeof(crlf), HAL_MAX_DELAY);
-			xThread_Safe_UART_Transmit((uint8_t *)crlf);
+			xThread_Safe_UART_Transmit((uint8_t *)receivedMessage, sizeof(messageFrame_t));
 		}
 		osDelay(1);
 	}
@@ -661,12 +703,13 @@ void StartADCvoltageRead(void *argument)
 	uint8_t txt[32];
 	uint8_t cycle;
 	uint32_t raw=0;
-	uint32_t milliVolt=0;
-	MessageBuffer_t ADC_Message;
-	sprintf((char *)ADC_Message.Header, "V:");
-	size = sprintf((char *)txt, "ADC task started");
-	xThread_Safe_UART_Transmit(txt);
-	xThread_Safe_UART_Transmit((uint8_t*)crlf);
+	unionFloatUint8_t AdcData;
+	messageFrame_t AdcMessageFrame;
+	float fMilliVolt=0.0;
+	int size;
+	size=sprintf((char *)txt, "ADC task started");
+	xThread_Safe_UART_Transmit(txt, size);
+	xThread_Safe_UART_Transmit((uint8_t*)crlf, strlen(crlf));
 	/* ADC in single channel continuous conversion mode, EOC flag at the end of all conversions */
 	HAL_ADC_Start(&hadc1);
 	for(;;)
@@ -682,38 +725,42 @@ void StartADCvoltageRead(void *argument)
 			}
 			else
 			{
-				sprintf((char *)txt, "ADC Poll ERROR - %u", cycle);
-				xThread_Safe_UART_Transmit(txt);
-				xThread_Safe_UART_Transmit((uint8_t*)crlf);
+				size=sprintf((char *)txt, "ADC Poll ERROR - %u", cycle);
+				xThread_Safe_UART_Transmit(txt, size);
+				xThread_Safe_UART_Transmit((uint8_t*)crlf, strlen(crlf));
 			}
 			osDelay(1);
 		}
 		raw=raw>>2;
 		if(INCLUDE_RAW_ADC_IN_MESSAGE)
 		{
-			sprintf((char *)ADC_Message.Payload, "raw: %lu", raw);
-			if(pdTRUE == xQueueSend(UART_Queue_Handle, &ADC_Message, 10))
+			memset((char *)AdcData.u8, 0, sizeof(AdcData.u8));
+			AdcData.f=(float)raw*1.0;
+			buildFrameToSend(FRAME_CMD_ADC_RAW, AdcData, AdcMessageFrame);
+			if(pdTRUE == xQueueSend(UART_Queue_Handle, &AdcMessageFrame, QUEUE_SEND_WAIT))
 			{
 				osDelay(1);
 			}
 			else
 			{
-				sprintf((char *)txt, "ADC Q Send ERROR");
-				xThread_Safe_UART_Transmit(txt);
-				xThread_Safe_UART_Transmit((uint8_t*)crlf);
+				size=sprintf((char *)txt, "ADC Q Send ERROR");
+				xThread_Safe_UART_Transmit(txt, size);
+				xThread_Safe_UART_Transmit((uint8_t*)crlf, strlen(crlf));
 			}
 		}
-		milliVolt=(uint32_t)((3300*raw)/4095);
-		sprintf((char *)ADC_Message.Payload, "%lu mV", milliVolt);
-		if(pdTRUE == xQueueSend(UART_Queue_Handle, &ADC_Message, 10))
+		memset((char *)AdcData.u8, 0, sizeof(AdcData.u8));
+		fMilliVolt=(float)((3300*raw)/4095);
+		AdcData.f=fMilliVolt;
+		buildFrameToSend(FRAME_CMD_ADC_VALUE, AdcData, AdcMessageFrame);
+		if(pdTRUE == xQueueSend(UART_Queue_Handle, &AdcMessageFrame, QUEUE_SEND_WAIT))
 		{
 			osDelay(1);
 		}
 		else
 		{
-			sprintf((char *)txt, "ADC Q Send ERROR");
-			xThread_Safe_UART_Transmit(txt);
-			xThread_Safe_UART_Transmit((uint8_t*)crlf);
+			size=sprintf((char *)txt, "ADC Q Send ERROR");
+			xThread_Safe_UART_Transmit(txt, size);
+			xThread_Safe_UART_Transmit((uint8_t*)crlf, strlen(crlf));
 		}
 		//HAL_ADC_Stop(&hadc1);
 		osDelay(ADC_Voltage_Poll_Delay);
