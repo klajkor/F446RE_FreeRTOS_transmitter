@@ -9,6 +9,7 @@
 #define INC_PROTOCOL_H_
 
 #include <stdio.h>
+#include <stdint.h>
 
 #define FRAME_START_BYTE_1 0x55
 #define FRAME_START_BYTE_2 0x56
@@ -38,5 +39,8 @@ typedef struct
 typedef uint8_t messageFrame_t[12];
 
 int buildFrameToSend(uint8_t frameCmdID, unionFloatUint8_t frameData, uint8_t *pFrame);
+
+
+uint8_t gencrc8(uint8_t *data, uint8_t len);
 
 #endif /* INC_PROTOCOL_H_ */

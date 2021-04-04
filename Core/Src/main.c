@@ -28,7 +28,6 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "semphr.h"
-#include "crc.h"
 #include "protocol.h"
 /* USER CODE END Includes */
 
@@ -48,7 +47,7 @@
 #define Button_Debounce_Delay 80U  // in millisec
 #define ADC_CH1_Port GPIOA
 #define ADC_CH1_Pin  GPIO_PIN_0 // CN8 A0 pin
-#define ADC_Voltage_Poll_Delay 7531U // in millisec
+#define ADC_Voltage_Poll_Delay 2000U // in millisec
 #define INCLUDE_RAW_ADC_IN_MESSAGE 0
 #define QUEUE_SEND_WAIT 10
 #define QUEUE_REC_WAIT 10

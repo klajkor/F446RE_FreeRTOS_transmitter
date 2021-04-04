@@ -10,6 +10,6 @@
 
 #include <stdio.h>
 
-uint8_t gencrc8(uint8_t *data, uint8_t len);
+
 
 #endif /* INC_CRC_H_ */
