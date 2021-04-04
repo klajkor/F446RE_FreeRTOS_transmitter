@@ -28,6 +28,7 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "semphr.h"
+#include "main_defs.h"
 #include "protocol.h"
 /* USER CODE END Includes */
 
@@ -38,22 +39,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define Button_Port GPIOC
-#define Button_Pin  GPIO_PIN_0 // CN8 A5 pin
-#define Signal_Port GPIOC
-#define Signal_Pin  GPIO_PIN_1 // CN8 A4 pin
-#define Signal_High_Duration 241U // in millisec
-#define Signal_Low_Duration 33U // in millisec
-#define Button_Debounce_Delay 80U  // in millisec
-#define ADC_CH1_Port GPIOA
-#define ADC_CH1_Pin  GPIO_PIN_0 // CN8 A0 pin
-#define ADC_Voltage_Poll_Delay 2000U // in millisec
-#define INCLUDE_RAW_ADC_IN_MESSAGE 0
-#define QUEUE_SEND_WAIT 10
-#define QUEUE_REC_WAIT 10
-
-//#define DAC_Port GPIOA
-//#define DAC_Pin  GPIO_PIN_4 // CN8 A2 pin
 
 
 /* USER CODE END PD */
@@ -187,7 +172,7 @@ int main(void)
 	HAL_UART_Transmit(&huart2, (uint8_t*)crlf, sizeof(crlf), HAL_MAX_DELAY);
 
 	/* Create queue for UART messages */
-	UART_Queue_Handle=xQueueCreate( 20, sizeof( messageFrame_t) );
+	UART_Queue_Handle=xQueueCreate( UART_QUEUE_LENGTH, sizeof( messageFrame_t) );
 	if (UART_Queue_Handle == 0)
 	{
 		Error_Handler();
