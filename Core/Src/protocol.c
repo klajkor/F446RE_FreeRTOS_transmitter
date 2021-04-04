@@ -17,7 +17,7 @@ protocolRetVal_enum buildFrameToSend(uint8_t frameCmdID, unionFloatUint8_t frame
 
 	if ( NULL != pFrame)
 	{
-		memset((char *)pFrame, 0, sizeof(pFrame));
+		memset((char *)pFrame, 0, sizeof(uint8_t));
 
 		pFrame[0]=FRAME_START_BYTE_1;
 		pFrame[1]=FRAME_START_BYTE_2;
