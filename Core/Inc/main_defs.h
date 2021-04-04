@@ -26,5 +26,12 @@
 //#define DAC_Pin  GPIO_PIN_4 // CN8 A2 pin
 
 #define UART_QUEUE_LENGTH			( ( UBaseType_t ) 20 )
+#define UART_TRANSMIT_MAX_DELAY		( 2000U ) // in millisec
+
+#define TXT_BUFFER_LENGTH			( 32U )
+#define DATA_BUFFER_LENGTH			( 32U )
+
+#define ADC_VOLTAGE_REF_MILLIVOLT	( ( uint16_t) 3300 ) // in mV
+#define ADC_RESOLUTION				( ( uint16_t) 0xFFF ) // 12 bit ADC
 
 #endif /* INC_MAIN_DEFS_H_ */

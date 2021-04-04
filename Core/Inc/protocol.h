@@ -41,8 +41,8 @@ typedef struct
 typedef uint8_t messageFrame_t[12];
 
 typedef enum {
-    protocolRetVal_OK = 0,
-    protocolRetVal_NOK,
+    protocolRetVal_NOK = 0,
+    protocolRetVal_OK,
     protocolRetVal_End
 } protocolRetVal_enum;
 
