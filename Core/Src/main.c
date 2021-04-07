@@ -95,11 +95,6 @@ osMessageQueueId_t NotUsedQueueHandle;
 const osMessageQueueAttr_t NotUsedQueue_attributes = {
   .name = "NotUsedQueue"
 };
-/* Definitions for ButtonSemaphore */
-osSemaphoreId_t ButtonSemaphoreHandle;
-const osSemaphoreAttr_t ButtonSemaphore_attributes = {
-  .name = "ButtonSemaphore"
-};
 /* USER CODE BEGIN PV */
 uint16_t size;
 uint8_t Data[DATA_BUFFER_LENGTH];
@@ -180,6 +175,9 @@ int main(void)
 	/* Create Mutexes */
 	Create_Mutexes();
 
+	/* Create Semaphores */
+	Create_Semaphores();
+
 	/* Test ADC conversion before the FreeRTOS kernel starts */
 	testADC1();
 
@@ -192,13 +190,9 @@ int main(void)
 	/* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
 
-  /* Create the semaphores(s) */
-  /* creation of ButtonSemaphore */
-  ButtonSemaphoreHandle = osSemaphoreNew(1, 1, &ButtonSemaphore_attributes);
-
   /* USER CODE BEGIN RTOS_SEMAPHORES */
 	/* add semaphores, ... */
-	buttonSemaphoreStatus = osSemaphoreAcquire (ButtonSemaphoreHandle, 10U);
+
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -532,27 +526,29 @@ void StartButtonRead(void *argument)
 
 	for(;;)
 	{
-		semaCount_b = osSemaphoreGetCount(ButtonSemaphoreHandle);
+		semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
 		if(HAL_GPIO_ReadPin(Button_Port, Button_Pin))
 		{
 			/* Button released */
 			if (semaCount_b > 0)
 			{
 				/* Semaphore not yet acquired */
-				buttonSemaphoreStatus = osSemaphoreAcquire(ButtonSemaphoreHandle, 10U);
-				semaCount_b = osSemaphoreGetCount(ButtonSemaphoreHandle);
-				memset((char *)BtnData.u8, 0, sizeof(BtnData.u8));
-				BtnData.u8[0]=FRAME_STATUS_OFF;
-				buildFrameToSend(FRAME_CMD_BTN_STATUS, BtnData, BtnMessageFrame);
-				if(pdTRUE == xQueueSend(UART_Queue_Handle, &BtnMessageFrame, QUEUE_SEND_WAIT))
+				if( xSemaphoreTake( xButtonBinarySemaphore, SEMAPHORE_TAKE_WAIT ) == pdTRUE )
 				{
-					osDelay(0);
-				}
-				else
-				{
-					sizeof_Data = sprintf((char *)Data, "B Q0 Send ERR");
-					xThread_Safe_UART_Transmit(Data, sizeof_Data);
-					xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
+					semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
+					memset((char *)BtnData.u8, 0, sizeof(BtnData.u8));
+					BtnData.u8[0]=FRAME_STATUS_OFF;
+					buildFrameToSend(FRAME_CMD_BTN_STATUS, BtnData, BtnMessageFrame);
+					if(pdTRUE == xQueueSend(UART_Queue_Handle, &BtnMessageFrame, QUEUE_SEND_WAIT))
+					{
+						osDelay(0);
+					}
+					else
+					{
+						sizeof_Data = sprintf((char *)Data, "B Q0 Send ERR");
+						xThread_Safe_UART_Transmit(Data, sizeof_Data);
+						xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
+					}
 				}
 			}
 		}
@@ -562,20 +558,22 @@ void StartButtonRead(void *argument)
 			if (semaCount_b == 0)
 			{
 				/* Semaphore not yet released */
-				buttonSemaphoreStatus = osSemaphoreRelease(ButtonSemaphoreHandle);
-				semaCount_b = osSemaphoreGetCount(ButtonSemaphoreHandle);
-				memset((char *)BtnData.u8, 0, sizeof(BtnData.u8));
-				BtnData.u8[0]=FRAME_STATUS_ON;
-				buildFrameToSend(FRAME_CMD_BTN_STATUS, BtnData, BtnMessageFrame);
-				if(pdTRUE == xQueueSend(UART_Queue_Handle, &BtnMessageFrame, QUEUE_SEND_WAIT))
+				if( xSemaphoreGive( xButtonBinarySemaphore ) == pdTRUE )
 				{
-					osDelay(0);
-				}
-				else
-				{
-					sizeof_Data = sprintf((char *)Data, "B Q1 Send ERR");
-					xThread_Safe_UART_Transmit(Data, sizeof_Data);
-					xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
+					semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
+					memset((char *)BtnData.u8, 0, sizeof(BtnData.u8));
+					BtnData.u8[0]=FRAME_STATUS_ON;
+					buildFrameToSend(FRAME_CMD_BTN_STATUS, BtnData, BtnMessageFrame);
+					if(pdTRUE == xQueueSend(UART_Queue_Handle, &BtnMessageFrame, QUEUE_SEND_WAIT))
+					{
+						osDelay(0);
+					}
+					else
+					{
+						sizeof_Data = sprintf((char *)Data, "B Q1 Send ERR");
+						xThread_Safe_UART_Transmit(Data, sizeof_Data);
+						xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
+					}
 				}
 			}
 
@@ -596,18 +594,19 @@ void StartLEDswitcher(void *argument)
 {
   /* USER CODE BEGIN StartLEDswitcher */
 	/* Infinite loop */
-	uint32_t semaCount, prevCount;
+	uint32_t semaCount_b;
+	uint32_t prevCount;
 	unionFloatUint8_t LedData;
 	messageFrame_t LedMessageFrame;
-	semaCount = osSemaphoreGetCount(ButtonSemaphoreHandle);
-	prevCount = semaCount;
+	semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
+	prevCount = semaCount_b;
 	for(;;)
 	{
-		semaCount = osSemaphoreGetCount(ButtonSemaphoreHandle);
-		if (semaCount != prevCount)
+		semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
+		if (semaCount_b != prevCount)
 		{
-			prevCount = semaCount;
-			if (semaCount > 0)
+			prevCount = semaCount_b;
+			if (semaCount_b > 0)
 			{
 				HAL_GPIO_WritePin(GPIOA, LD2_Pin, GPIO_PIN_SET);
 				memset((char *)LedData.u8, 0, sizeof(LedData.u8));

@@ -18,3 +18,19 @@ void Create_Mutexes(void)
 	}
 }
 
+void Create_Semaphores(void)
+{
+	/* Create Binary Semaphore for Push Button */
+	xButtonBinarySemaphore = xSemaphoreCreateBinary();
+	if( xButtonBinarySemaphore == NULL )
+	{
+		/* There was insufficient FreeRTOS heap available for the semaphore to
+	        be created successfully. */
+		Error_Handler();
+	}
+	xSemaphoreGive(xButtonBinarySemaphore);
+	if (uxSemaphoreGetCount(xButtonBinarySemaphore) !=1 )
+	{
+		Error_Handler();
+	}
+}

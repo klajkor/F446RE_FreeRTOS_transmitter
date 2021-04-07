@@ -18,8 +18,13 @@
 #include "FreeRTOS.h"
 #include "semphr.h"
 
+#define SEMAPHORE_TAKE_WAIT	( ( TickType_t ) 10 )
+
 SemaphoreHandle_t UART_Mutex_Handle;
+SemaphoreHandle_t xButtonBinarySemaphore;
 
 void Create_Mutexes(void);
+
+void Create_Semaphores(void);
 
 #endif /* INC_APP_SEMA_H_ */
