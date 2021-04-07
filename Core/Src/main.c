@@ -30,6 +30,7 @@
 #include "semphr.h"
 #include "main_defs.h"
 #include "protocol.h"
+#include "app_sema.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -108,7 +109,7 @@ int sizeof_Data;
 osStatus_t buttonSemaphoreStatus;
 
 QueueHandle_t UART_Queue_Handle;
-SemaphoreHandle_t UART_Mutex_Handle;
+
 
 //unionFloatUint8_t testData;
 //messageFrame_t messageFrame;
@@ -180,12 +181,8 @@ int main(void)
 	{
 		Error_Handler();
 	}
-	/* Create Mutex for Thread Safe UART transmit */
-	UART_Mutex_Handle=xSemaphoreCreateMutex();
-	if (UART_Mutex_Handle == 0)
-	{
-		Error_Handler();
-	}
+	/* Create Mutexes */
+	Create_Mutexes();
 
 	/* Test ADC conversion before the FreeRTOS kernel starts */
 	testADC1();
