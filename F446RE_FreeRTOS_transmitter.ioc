@@ -2,7 +2,7 @@
 Mcu.Family=STM32F4
 ProjectManager.MainLocation=Core/Src
 PH0-OSC_IN.Locked=true
-FREERTOS.Queues01=myQueue01,4,uint16_t,0,Dynamic,NULL,NULL
+FREERTOS.Queues01=NotUsedQueue,2,uint16_t,0,Dynamic,NULL,NULL
 PH0-OSC_IN.Signal=RCC_OSC_IN
 VP_SYS_VS_tim6.Mode=TIM6
 USART2.IPParameters=VirtualMode
@@ -144,7 +144,7 @@ PA5.Signal=GPIO_Output
 RCC.PLLSAIPCLKFreq_Value=96000000
 board=NUCLEO-F446RE
 RCC.VCOOutputFreq_Value=336000000
-ProjectManager.LastFirmware=true
+ProjectManager.LastFirmware=false
 VP_SYS_VS_tim6.Signal=SYS_VS_tim6
 NVIC.SavedSystickIrqHandlerGenerated=true
 RCC.APB2Freq_Value=84000000
