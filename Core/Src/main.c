@@ -31,6 +31,7 @@
 #include "main_defs.h"
 #include "protocol.h"
 #include "app_sema.h"
+#include "app_queue.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -108,8 +109,6 @@ int sizeof_Data;
 
 osStatus_t buttonSemaphoreStatus;
 
-QueueHandle_t UART_Queue_Handle;
-
 
 //unionFloatUint8_t testData;
 //messageFrame_t messageFrame;
@@ -175,12 +174,9 @@ int main(void)
 	sizeof_crlf = sizeof_crlf;
 	HAL_UART_Transmit(&huart2, crlf, sizeof_crlf, UART_TRANSMIT_MAX_DELAY);
 
-	/* Create queue for UART messages */
-	UART_Queue_Handle=xQueueCreate( UART_QUEUE_LENGTH, sizeof( messageFrame_t) );
-	if (UART_Queue_Handle == 0)
-	{
-		Error_Handler();
-	}
+	/* Create queues */
+	Create_Queues();
+
 	/* Create Mutexes */
 	Create_Mutexes();
 

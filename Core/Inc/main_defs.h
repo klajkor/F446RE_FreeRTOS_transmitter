@@ -25,7 +25,6 @@
 //#define DAC_Port GPIOA
 //#define DAC_Pin  GPIO_PIN_4 // CN8 A2 pin
 
-#define UART_QUEUE_LENGTH			( ( UBaseType_t ) 20 )
 #define UART_TRANSMIT_MAX_DELAY		( 2000U ) // in millisec
 
 #define TXT_BUFFER_LENGTH			( 32U )
