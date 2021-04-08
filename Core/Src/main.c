@@ -32,6 +32,8 @@
 #include "protocol.h"
 #include "app_sema.h"
 #include "app_queue.h"
+#include "app_tasks.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -173,10 +175,13 @@ int main(void)
 	Create_Queues();
 
 	/* Create Mutexes */
-	Create_Mutexes();
+	Create_App_Mutexes();
 
 	/* Create Semaphores */
-	Create_Semaphores();
+	Create_App_Semaphores();
+
+	/* Create RTOS Tasks */
+	Create_App_Tasks();
 
 	/* Test ADC conversion before the FreeRTOS kernel starts */
 	testADC1();
@@ -760,13 +765,14 @@ void StartButtonTestSignal(void *argument)
 {
   /* USER CODE BEGIN StartButtonTestSignal */
 	/* Infinite loop */
-	HAL_GPIO_WritePin(Signal_Port, Signal_Pin, GPIO_PIN_SET);
+	//HAL_GPIO_WritePin(Signal_Port, Signal_Pin, GPIO_PIN_SET);
 	for(;;)
 	{
-		HAL_GPIO_WritePin(Signal_Port, Signal_Pin, GPIO_PIN_SET);
-		osDelay(Signal_High_Duration);
-		HAL_GPIO_WritePin(Signal_Port, Signal_Pin, GPIO_PIN_RESET);
-		osDelay(Signal_Low_Duration);
+		//HAL_GPIO_WritePin(Signal_Port, Signal_Pin, GPIO_PIN_SET);
+		//osDelay(Signal_High_Duration);
+		//HAL_GPIO_WritePin(Signal_Port, Signal_Pin, GPIO_PIN_RESET);
+		//osDelay(Signal_Low_Duration);
+		osDelay(1);
 	}
   /* USER CODE END StartButtonTestSignal */
 }

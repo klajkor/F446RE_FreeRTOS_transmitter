@@ -8,7 +8,7 @@
  */
 #include "app_sema.h"
 
-void Create_Mutexes(void)
+void Create_App_Mutexes(void)
 {
 	/* Create Mutex for Thread Safe UART transmit */
 	UART_Mutex_Handle=xSemaphoreCreateMutex();
@@ -18,7 +18,7 @@ void Create_Mutexes(void)
 	}
 }
 
-void Create_Semaphores(void)
+void Create_App_Semaphores(void)
 {
 	/* Create Binary Semaphore for Push Button */
 	xButtonBinarySemaphore = xSemaphoreCreateBinary();

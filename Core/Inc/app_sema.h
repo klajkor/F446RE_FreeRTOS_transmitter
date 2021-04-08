@@ -23,8 +23,8 @@
 SemaphoreHandle_t UART_Mutex_Handle;
 SemaphoreHandle_t xButtonBinarySemaphore;
 
-void Create_Mutexes(void);
+void Create_App_Mutexes(void);
 
-void Create_Semaphores(void);
+void Create_App_Semaphores(void);
 
 #endif /* INC_APP_SEMA_H_ */
