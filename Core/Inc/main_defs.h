@@ -8,8 +8,10 @@
 #ifndef INC_MAIN_DEFS_H_
 #define INC_MAIN_DEFS_H_
 
+#include "main.h"
 #include <stdio.h>
 #include <stdint.h>
+#include "FreeRTOS.h"
 
 #define Button_Port 				( GPIOC )
 #define Button_Pin  				( GPIO_PIN_0 ) // CN8 A5 pin
@@ -33,6 +35,14 @@
 
 #define ADC_VOLTAGE_REF_MILLIVOLT	( ( uint16_t) 3300 ) // in mV
 #define ADC_RESOLUTION				( ( uint16_t) 0xFFF ) // 12 bit ADC
+
+uint16_t size;
+uint8_t Data[DATA_BUFFER_LENGTH];
+uint8_t crlf[3];
+int sizeof_crlf;
+int sizeof_Data;
+
+BaseType_t xThread_Safe_UART_Transmit(uint8_t *pTransmitData, uint8_t data_size);
 
 #endif /* INC_MAIN_DEFS_H_ */
 

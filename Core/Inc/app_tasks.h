@@ -9,12 +9,17 @@
 #define INC_APP_TASKS_H_
 
 #include "main.h"
+#include "main_defs.h"
 
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "FreeRTOS.h"
 #include "task.h"
+#include "protocol.h"
+#include "app_sema.h"
+#include "app_queue.h"
 
 #define STANDARD_TASK_STACK_SIZE 	( ( configSTACK_DEPTH_TYPE ) 128)
 #define PRIO_ButtonTestSignal 		( ( UBaseType_t ) 10 )

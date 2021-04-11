@@ -11,11 +11,11 @@
 #define INC_APP_QUEUE_H_
 
 #include "main.h"
+#include "main_defs.h"
 
 #include <stdio.h>
 #include <stdint.h>
 
-#include "main_defs.h"
 #include "protocol.h"
 #include "FreeRTOS.h"
 #include "queue.h"

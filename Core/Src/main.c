@@ -64,13 +64,6 @@ const osThreadAttr_t buttonRead_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityHigh,
 };
-/* Definitions for LEDswitcher */
-osThreadId_t LEDswitcherHandle;
-const osThreadAttr_t LEDswitcher_attributes = {
-  .name = "LEDswitcher",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityBelowNormal,
-};
 /* Definitions for transmitUARTmes */
 osThreadId_t transmitUARTmesHandle;
 const osThreadAttr_t transmitUARTmes_attributes = {
@@ -91,17 +84,9 @@ const osMessageQueueAttr_t NotUsedQueue_attributes = {
   .name = "NotUsedQueue"
 };
 /* USER CODE BEGIN PV */
-uint16_t size;
-uint8_t Data[DATA_BUFFER_LENGTH];
-uint8_t crlf[3];
-int sizeof_crlf;
-int sizeof_Data;
 
-osStatus_t buttonSemaphoreStatus;
+//osStatus_t buttonSemaphoreStatus;
 
-
-//unionFloatUint8_t testData;
-//messageFrame_t messageFrame;
 
 /* USER CODE END PV */
 
@@ -111,14 +96,13 @@ static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_ADC1_Init(void);
 void StartButtonRead(void *argument);
-void StartLEDswitcher(void *argument);
 void StartTransmitUARTmessage(void *argument);
 void StartADCvoltageRead(void *argument);
 
 /* USER CODE BEGIN PFP */
 
 void testADC1(void);
-BaseType_t xThread_Safe_UART_Transmit(uint8_t *pTransmitData, uint8_t data_size);
+
 
 
 /* USER CODE END PFP */
@@ -207,9 +191,6 @@ int main(void)
   /* Create the thread(s) */
   /* creation of buttonRead */
   buttonReadHandle = osThreadNew(StartButtonRead, NULL, &buttonRead_attributes);
-
-  /* creation of LEDswitcher */
-  LEDswitcherHandle = osThreadNew(StartLEDswitcher, NULL, &LEDswitcher_attributes);
 
   /* creation of transmitUARTmes */
   transmitUARTmesHandle = osThreadNew(StartTransmitUARTmessage, NULL, &transmitUARTmes_attributes);
@@ -575,70 +556,6 @@ void StartButtonRead(void *argument)
 		osDelay(Button_Debounce_Delay);
 	}
   /* USER CODE END 5 */
-}
-
-/* USER CODE BEGIN Header_StartLEDswitcher */
-/**
- * @brief Function implementing the LEDswitcher thread.
- * @param argument: Not used
- * @retval None
- */
-/* USER CODE END Header_StartLEDswitcher */
-void StartLEDswitcher(void *argument)
-{
-  /* USER CODE BEGIN StartLEDswitcher */
-	/* Infinite loop */
-	uint32_t semaCount_b;
-	uint32_t prevCount;
-	unionFloatUint8_t LedData;
-	messageFrame_t LedMessageFrame;
-	semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
-	prevCount = semaCount_b;
-	for(;;)
-	{
-		semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
-		if (semaCount_b != prevCount)
-		{
-			prevCount = semaCount_b;
-			if (semaCount_b > 0)
-			{
-				HAL_GPIO_WritePin(GPIOA, LD2_Pin, GPIO_PIN_SET);
-				memset((char *)LedData.u8, 0, sizeof(LedData.u8));
-				LedData.u8[0]=FRAME_STATUS_ON;
-				buildFrameToSend(FRAME_CMD_LED_STATUS, LedData, LedMessageFrame);
-				if(pdTRUE == xQueueSend(UART_Queue_Handle, &LedMessageFrame, QUEUE_SEND_WAIT))
-				{
-					osDelay(0);
-				}
-				else
-				{
-					sizeof_Data = sprintf((char *)Data, "L Q1 Send ERR");
-					xThread_Safe_UART_Transmit(Data, sizeof_Data);
-					xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
-				}
-			}
-			else
-			{
-				HAL_GPIO_WritePin(GPIOA, LD2_Pin, GPIO_PIN_RESET);
-				memset((char *)LedData.u8, 0, sizeof(LedData.u8));
-				LedData.u8[0]=FRAME_STATUS_OFF;
-				buildFrameToSend(FRAME_CMD_LED_STATUS, LedData, LedMessageFrame);
-				if(pdTRUE == xQueueSend(UART_Queue_Handle, &LedMessageFrame, QUEUE_SEND_WAIT))
-				{
-					osDelay(0);
-				}
-				else
-				{
-					sizeof_Data = sprintf((char *)Data, "L Q0 Send ERR");
-					xThread_Safe_UART_Transmit(Data, sizeof_Data);
-					xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
-				}
-			}
-			osDelay(1);
-		}
-		osDelay(1);
-	}
-  /* USER CODE END StartLEDswitcher */
 }
 
 /* USER CODE BEGIN Header_StartTransmitUARTmessage */

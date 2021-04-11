@@ -11,6 +11,7 @@
 #define INC_APP_SEMA_H_
 
 #include "main.h"
+#include "main_defs.h"
 
 #include <stdio.h>
 #include <stdint.h>
