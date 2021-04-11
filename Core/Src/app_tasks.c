@@ -7,7 +7,12 @@
 
 #include "app_tasks.h"
 
-TaskHandle_t xHandle_ButtonTestSignal = NULL;
+TaskHandle_t xHandle_ButtonTestSignal 	= NULL;
+TaskHandle_t xHandle_LEDswitcher 		= NULL;
+TaskHandle_t xHandle_ADCvoltageRead 	= NULL;
+TaskHandle_t xHandle_TX_UART_msg 		= NULL;
+TaskHandle_t xHandle_buttonRead 		= NULL;
+
 const TickType_t xSignal_High_Duration = 641 / portTICK_PERIOD_MS;
 const TickType_t xSignal_Low_Duration = 45 / portTICK_PERIOD_MS;
 
@@ -42,4 +47,9 @@ void xTaskButtonTestSignal(void *pvParameters)
 		HAL_GPIO_WritePin(Signal_Port, Signal_Pin, GPIO_PIN_RESET);
 		vTaskDelay(xSignal_Low_Duration);
 	}
+}
+
+void xTaskLEDswitcher(void *pvParameters)
+{
+
 }

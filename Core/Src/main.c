@@ -85,13 +85,6 @@ const osThreadAttr_t ADCvoltageRead_attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for ButtonTestSigna */
-osThreadId_t ButtonTestSignaHandle;
-const osThreadAttr_t ButtonTestSigna_attributes = {
-  .name = "ButtonTestSigna",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityBelowNormal,
-};
 /* Definitions for NotUsedQueue */
 osMessageQueueId_t NotUsedQueueHandle;
 const osMessageQueueAttr_t NotUsedQueue_attributes = {
@@ -121,7 +114,6 @@ void StartButtonRead(void *argument);
 void StartLEDswitcher(void *argument);
 void StartTransmitUARTmessage(void *argument);
 void StartADCvoltageRead(void *argument);
-void StartButtonTestSignal(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -224,9 +216,6 @@ int main(void)
 
   /* creation of ADCvoltageRead */
   ADCvoltageReadHandle = osThreadNew(StartADCvoltageRead, NULL, &ADCvoltageRead_attributes);
-
-  /* creation of ButtonTestSigna */
-  ButtonTestSignaHandle = osThreadNew(StartButtonTestSignal, NULL, &ButtonTestSigna_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
@@ -752,29 +741,6 @@ void StartADCvoltageRead(void *argument)
 		osDelay(ADC_Voltage_Poll_Delay);
 	}
   /* USER CODE END StartADCvoltageRead */
-}
-
-/* USER CODE BEGIN Header_StartButtonTestSignal */
-/**
- * @brief Function implementing the ButtonTestSigna thread.
- * @param argument: Not used
- * @retval None
- */
-/* USER CODE END Header_StartButtonTestSignal */
-void StartButtonTestSignal(void *argument)
-{
-  /* USER CODE BEGIN StartButtonTestSignal */
-	/* Infinite loop */
-	//HAL_GPIO_WritePin(Signal_Port, Signal_Pin, GPIO_PIN_SET);
-	for(;;)
-	{
-		//HAL_GPIO_WritePin(Signal_Port, Signal_Pin, GPIO_PIN_SET);
-		//osDelay(Signal_High_Duration);
-		//HAL_GPIO_WritePin(Signal_Port, Signal_Pin, GPIO_PIN_RESET);
-		//osDelay(Signal_Low_Duration);
-		osDelay(1);
-	}
-  /* USER CODE END StartButtonTestSignal */
 }
 
  /**

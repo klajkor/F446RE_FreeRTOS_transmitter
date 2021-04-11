@@ -18,6 +18,10 @@
 
 #define STANDARD_TASK_STACK_SIZE 	( ( configSTACK_DEPTH_TYPE ) 128)
 #define PRIO_ButtonTestSignal 		( ( UBaseType_t ) 10 )
+#define PRIO_LEDswitcher 			( ( UBaseType_t ) 20 )
+#define PRIO_ADCvoltageRead			( ( UBaseType_t ) 30 )
+#define PRIO_TX_UART_msg			( ( UBaseType_t ) 40 )
+#define PRIO_buttonRead				( ( UBaseType_t ) 50 )
 #define Signal_Port 				( GPIOC )
 #define Signal_Pin  				( GPIO_PIN_1 ) // CN8 A4 pin
 
@@ -25,5 +29,6 @@
 void Create_App_Tasks(void);
 
 void xTaskButtonTestSignal(void *pvParameters);
+void xTaskLEDswitcher(void *pvParameters);
 
 #endif /* INC_APP_TASKS_H_ */
