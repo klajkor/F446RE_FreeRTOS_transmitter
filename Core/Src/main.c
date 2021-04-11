@@ -71,13 +71,6 @@ const osThreadAttr_t transmitUARTmes_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityAboveNormal,
 };
-/* Definitions for ADCvoltageRead */
-osThreadId_t ADCvoltageReadHandle;
-const osThreadAttr_t ADCvoltageRead_attributes = {
-  .name = "ADCvoltageRead",
-  .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
-};
 /* Definitions for NotUsedQueue */
 osMessageQueueId_t NotUsedQueueHandle;
 const osMessageQueueAttr_t NotUsedQueue_attributes = {
@@ -97,7 +90,6 @@ static void MX_USART2_UART_Init(void);
 static void MX_ADC1_Init(void);
 void StartButtonRead(void *argument);
 void StartTransmitUARTmessage(void *argument);
-void StartADCvoltageRead(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -147,6 +139,9 @@ int main(void)
 	sizeof_crlf = sizeof_crlf;
 	HAL_UART_Transmit(&huart2, crlf, sizeof_crlf, UART_TRANSMIT_MAX_DELAY);
 
+	/* Set the ADC handle used by xTaskADCvoltageRead task */
+	Set_ADC_Handle(hadc1);
+
 	/* Create queues */
 	Create_Queues();
 
@@ -194,9 +189,6 @@ int main(void)
 
   /* creation of transmitUARTmes */
   transmitUARTmesHandle = osThreadNew(StartTransmitUARTmessage, NULL, &transmitUARTmes_attributes);
-
-  /* creation of ADCvoltageRead */
-  ADCvoltageReadHandle = osThreadNew(StartADCvoltageRead, NULL, &ADCvoltageRead_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
@@ -579,85 +571,6 @@ void StartTransmitUARTmessage(void *argument)
 		osDelay(1);
 	}
   /* USER CODE END StartTransmitUARTmessage */
-}
-
-/* USER CODE BEGIN Header_StartADCvoltageRead */
-/**
- * @brief Function implementing the ADCvoltageRead thread.
- * @param argument: Not used
- * @retval None
- */
-/* USER CODE END Header_StartADCvoltageRead */
-void StartADCvoltageRead(void *argument)
-{
-  /* USER CODE BEGIN StartADCvoltageRead */
-	/* Infinite loop */
-	uint8_t txt[TXT_BUFFER_LENGTH];
-	uint8_t cycle;
-	uint32_t raw=0;
-	unionFloatUint8_t AdcData;
-	messageFrame_t AdcMessageFrame;
-	float fMilliVolt=0.0;
-	int size;
-	size=sprintf((char *)txt, "ADC task started");
-	xThread_Safe_UART_Transmit(txt, size);
-	xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
-	/* ADC in single channel continuous conversion mode, EOC flag at the end of all conversions */
-	HAL_ADC_Start(&hadc1);
-	for(;;)
-	{
-		cycle=0;
-		raw=0;
-		while(cycle<4)
-		{
-			if (HAL_ADC_PollForConversion(&hadc1, 2) == HAL_OK)
-			{
-				raw = raw + HAL_ADC_GetValue(&hadc1);
-				cycle++;
-			}
-			else
-			{
-				size=sprintf((char *)txt, "ADC Poll ERROR - %u", cycle);
-				xThread_Safe_UART_Transmit(txt, size);
-				xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
-			}
-			osDelay(1);
-		}
-		raw=raw>>2;
-		if(INCLUDE_RAW_ADC_IN_MESSAGE)
-		{
-			memset((char *)AdcData.u8, 0, sizeof(AdcData.u8));
-			AdcData.f=(float)raw*1.0;
-			buildFrameToSend(FRAME_CMD_ADC_RAW, AdcData, AdcMessageFrame);
-			if(pdTRUE == xQueueSend(UART_Queue_Handle, &AdcMessageFrame, QUEUE_SEND_WAIT))
-			{
-				osDelay(1);
-			}
-			else
-			{
-				size=sprintf((char *)txt, "ADC Q Send ERROR");
-				xThread_Safe_UART_Transmit(txt, size);
-				xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
-			}
-		}
-		memset((char *)AdcData.u8, 0, sizeof(AdcData.u8));
-		fMilliVolt=(float)((ADC_VOLTAGE_REF_MILLIVOLT * raw)/ADC_RESOLUTION);
-		AdcData.f=fMilliVolt;
-		buildFrameToSend(FRAME_CMD_ADC_VALUE, AdcData, AdcMessageFrame);
-		if(pdTRUE == xQueueSend(UART_Queue_Handle, &AdcMessageFrame, QUEUE_SEND_WAIT))
-		{
-			osDelay(1);
-		}
-		else
-		{
-			size=sprintf((char *)txt, "ADC Q Send ERROR");
-			xThread_Safe_UART_Transmit(txt, size);
-			xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
-		}
-		//HAL_ADC_Stop(&hadc1);
-		osDelay(ADC_Voltage_Poll_Delay);
-	}
-  /* USER CODE END StartADCvoltageRead */
 }
 
  /**

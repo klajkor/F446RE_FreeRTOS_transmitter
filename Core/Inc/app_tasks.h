@@ -32,8 +32,9 @@
 
 
 void Create_App_Tasks(void);
-
+void Set_ADC_Handle(ADC_HandleTypeDef new_ADC_Handle);
 void xTaskButtonTestSignal(void *pvParameters);
 void xTaskLEDswitcher(void *pvParameters);
+void xTaskADCvoltageRead(void *pvParameters);
 
 #endif /* INC_APP_TASKS_H_ */
