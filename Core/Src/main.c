@@ -33,6 +33,7 @@
 #include "app_sema.h"
 #include "app_queue.h"
 #include "app_tasks.h"
+#include "app_tests.h"
 
 /* USER CODE END Includes */
 
@@ -80,7 +81,6 @@ void StartNotUsedTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 
-void testADC1(void);
 
 
 
@@ -142,7 +142,7 @@ int main(void)
 	Create_App_Tasks();
 
 	/* Test ADC conversion before the FreeRTOS kernel starts */
-	testADC1();
+	testADC1(hadc1, huart2);
 
   /* USER CODE END 2 */
 
@@ -372,60 +372,6 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-void testADC1(void)
-{
-	uint8_t txt[TXT_BUFFER_LENGTH];
-	uint8_t testrun;
-	uint8_t i;
-	uint32_t raw=0;
-	int sizeof_txt;
-
-	uint32_t milliVolt=0;
-
-	sizeof_txt = sprintf((char *)txt, "ADC TEST loop started");
-	HAL_UART_Transmit(&huart2, txt,  sizeof_txt, UART_TRANSMIT_MAX_DELAY);
-	HAL_UART_Transmit(&huart2, crlf, sizeof_crlf, UART_TRANSMIT_MAX_DELAY);
-	HAL_ADC_Start(&hadc1);
-	for(testrun=1;testrun<=10;testrun++)
-	{
-		//HAL_ADC_Start(&hadc1);
-		raw=0;
-		for(i=0;i<4;i++)
-		{
-			if (HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
-			{
-				sizeof_txt = sprintf((char *)txt, "(%u) ADC Test Poll OK - %u", testrun, i);
-				HAL_UART_Transmit(&huart2, txt,  sizeof_txt, UART_TRANSMIT_MAX_DELAY);
-				HAL_UART_Transmit(&huart2, crlf, sizeof_crlf, UART_TRANSMIT_MAX_DELAY);
-				raw = raw + HAL_ADC_GetValue(&hadc1);
-
-			}
-			else
-			{
-				sizeof_txt = sprintf((char *)txt, "(%u) ADC Test Poll ERROR - %u", testrun, i);
-				HAL_UART_Transmit(&huart2, txt,  sizeof_txt, UART_TRANSMIT_MAX_DELAY);
-				HAL_UART_Transmit(&huart2, crlf, sizeof_crlf, UART_TRANSMIT_MAX_DELAY);
-				i--;
-			}
-			HAL_Delay(1);
-
-		}
-		raw = raw >> 2;
-		sizeof_txt = sprintf((char *)txt, "(%u) raw: %lu", testrun, raw);
-		HAL_UART_Transmit(&huart2, txt,  sizeof_txt, UART_TRANSMIT_MAX_DELAY);
-		HAL_UART_Transmit(&huart2, crlf, sizeof_crlf, UART_TRANSMIT_MAX_DELAY);
-		milliVolt=(uint32_t)((ADC_VOLTAGE_REF_MILLIVOLT * raw)/ADC_RESOLUTION);
-		sizeof_txt = sprintf((char *)txt, "(%u) %lu mV", testrun, milliVolt);
-		HAL_UART_Transmit(&huart2, txt,  sizeof_txt, UART_TRANSMIT_MAX_DELAY);
-		HAL_UART_Transmit(&huart2, crlf, sizeof_crlf, UART_TRANSMIT_MAX_DELAY);
-		//HAL_ADC_Stop(&hadc1);
-		HAL_Delay(500);
-	}
-	HAL_ADC_Stop(&hadc1);
-	sizeof_txt = sprintf((char *)txt, "ADC TEST loop completed");
-	HAL_UART_Transmit(&huart2, txt,  sizeof_txt, UART_TRANSMIT_MAX_DELAY);
-	HAL_UART_Transmit(&huart2, crlf, sizeof_crlf, UART_TRANSMIT_MAX_DELAY);
-}
 
 BaseType_t xThread_Safe_UART_Transmit(uint8_t *pTransmitData, uint8_t data_size)
 {
