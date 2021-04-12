@@ -64,11 +64,6 @@ const osThreadAttr_t NotUsedTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
-/* Definitions for NotUsedQueue */
-osMessageQueueId_t NotUsedQueueHandle;
-const osMessageQueueAttr_t NotUsedQueue_attributes = {
-  .name = "NotUsedQueue"
-};
 /* USER CODE BEGIN PV */
 
 //osStatus_t buttonSemaphoreStatus;
@@ -166,10 +161,6 @@ int main(void)
   /* USER CODE BEGIN RTOS_TIMERS */
 	/* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
-
-  /* Create the queue(s) */
-  /* creation of NotUsedQueue */
-  NotUsedQueueHandle = osMessageQueueNew (2, sizeof(uint16_t), &NotUsedQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
 	/* add queues, ... */

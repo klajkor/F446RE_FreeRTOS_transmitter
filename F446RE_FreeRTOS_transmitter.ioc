@@ -2,7 +2,6 @@
 Mcu.Family=STM32F4
 ProjectManager.MainLocation=Core/Src
 PH0-OSC_IN.Locked=true
-FREERTOS.Queues01=NotUsedQueue,2,uint16_t,0,Dynamic,NULL,NULL
 PH0-OSC_IN.Signal=RCC_OSC_IN
 VP_SYS_VS_tim6.Mode=TIM6
 USART2.IPParameters=VirtualMode
@@ -52,7 +51,7 @@ Mcu.Pin7=PA0-WKUP
 Mcu.Pin8=PA2
 Mcu.Pin9=PA3
 RCC.VCOSAIOutputFreq_Value=192000000
-FREERTOS.IPParameters=Tasks01,Queues01,FootprintOK
+FREERTOS.IPParameters=Tasks01,FootprintOK
 RCC.AHBFreq_Value=84000000
 PH0-OSC_IN.Mode=HSE-External-Oscillator
 Mcu.Pin0=PC13
