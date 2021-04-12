@@ -11,7 +11,7 @@ TaskHandle_t xHandle_ButtonTestSignal 	= NULL;
 TaskHandle_t xHandle_LEDswitcher 		= NULL;
 TaskHandle_t xHandle_ADCvoltageRead 	= NULL;
 TaskHandle_t xHandle_TX_UART_msg 		= NULL;
-TaskHandle_t xHandle_buttonRead 		= NULL;
+TaskHandle_t xHandle_ButtonRead 		= NULL;
 
 ADC_HandleTypeDef ADC_Handle_ADCvoltageRead;
 
@@ -70,6 +70,17 @@ void Create_App_Tasks(void)
 			( void * ) 1,
 			PRIO_TX_UART_msg,
 			&xHandle_TX_UART_msg );
+	if( xReturned != pdPASS )
+	{
+		Error_Handler();
+	}
+	xReturned = xTaskCreate(
+			xTaskButtonRead,
+			"xTaskButtonRead",
+			STANDARD_TASK_STACK_SIZE,
+			( void * ) 1,
+			PRIO_ButtonRead,
+			&xHandle_ButtonRead );
 	if( xReturned != pdPASS )
 	{
 		Error_Handler();
@@ -227,5 +238,69 @@ void xTaskTX_UART_msg(void *pvParameters)
 			xThread_Safe_UART_Transmit((uint8_t *)receivedMessage, sizeof(messageFrame_t));
 		}
 		vTaskDelay(1);
+	}
+}
+
+void xTaskButtonRead(void *pvParameters)
+{
+	uint32_t semaCount_b;
+	unionFloatUint8_t BtnData;
+	messageFrame_t BtnMessageFrame;
+
+	for(;;)
+	{
+		semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
+		if(HAL_GPIO_ReadPin(Button_Port, Button_Pin))
+		{
+			/* Button released */
+			if (semaCount_b > 0)
+			{
+				/* Semaphore not yet acquired */
+				if( xSemaphoreTake( xButtonBinarySemaphore, SEMAPHORE_TAKE_WAIT ) == pdTRUE )
+				{
+					semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
+					memset((char *)BtnData.u8, 0, sizeof(BtnData.u8));
+					BtnData.u8[0]=FRAME_STATUS_OFF;
+					buildFrameToSend(FRAME_CMD_BTN_STATUS, BtnData, BtnMessageFrame);
+					if(pdTRUE == xQueueSend(UART_Queue_Handle, &BtnMessageFrame, QUEUE_SEND_WAIT))
+					{
+						vTaskDelay(0);
+					}
+					else
+					{
+						sizeof_Data = sprintf((char *)Data, "B Q0 Send ERR");
+						xThread_Safe_UART_Transmit(Data, sizeof_Data);
+						xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
+					}
+				}
+			}
+		}
+		else
+		{
+			/* Button pushed */
+			if (semaCount_b == 0)
+			{
+				/* Semaphore not yet released */
+				if( xSemaphoreGive( xButtonBinarySemaphore ) == pdTRUE )
+				{
+					semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
+					memset((char *)BtnData.u8, 0, sizeof(BtnData.u8));
+					BtnData.u8[0]=FRAME_STATUS_ON;
+					buildFrameToSend(FRAME_CMD_BTN_STATUS, BtnData, BtnMessageFrame);
+					if(pdTRUE == xQueueSend(UART_Queue_Handle, &BtnMessageFrame, QUEUE_SEND_WAIT))
+					{
+						vTaskDelay(0);
+					}
+					else
+					{
+						sizeof_Data = sprintf((char *)Data, "B Q1 Send ERR");
+						xThread_Safe_UART_Transmit(Data, sizeof_Data);
+						xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
+					}
+				}
+			}
+
+		}
+		vTaskDelay(Button_Debounce_Delay);
 	}
 }

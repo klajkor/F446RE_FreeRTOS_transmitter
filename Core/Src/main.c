@@ -57,12 +57,12 @@ ADC_HandleTypeDef hadc1;
 
 UART_HandleTypeDef huart2;
 
-/* Definitions for buttonRead */
-osThreadId_t buttonReadHandle;
-const osThreadAttr_t buttonRead_attributes = {
-  .name = "buttonRead",
+/* Definitions for NotUsedTask */
+osThreadId_t NotUsedTaskHandle;
+const osThreadAttr_t NotUsedTask_attributes = {
+  .name = "NotUsedTask",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityHigh,
+  .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for NotUsedQueue */
 osMessageQueueId_t NotUsedQueueHandle;
@@ -81,7 +81,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_ADC1_Init(void);
-void StartButtonRead(void *argument);
+void StartNotUsedTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -176,8 +176,8 @@ int main(void)
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* creation of buttonRead */
-  buttonReadHandle = osThreadNew(StartButtonRead, NULL, &buttonRead_attributes);
+  /* creation of NotUsedTask */
+  NotUsedTaskHandle = osThreadNew(StartNotUsedTask, NULL, &NotUsedTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
@@ -465,76 +465,21 @@ BaseType_t xThread_Safe_UART_Transmit(uint8_t *pTransmitData, uint8_t data_size)
 
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_StartButtonRead */
+/* USER CODE BEGIN Header_StartNotUsedTask */
 /**
- * @brief  Function implementing the buttonRead thread.
- * @param  argument: Not used
- * @retval None
- */
-/* USER CODE END Header_StartButtonRead */
-void StartButtonRead(void *argument)
+  * @brief  Function implementing the NotUsedTask thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+/* USER CODE END Header_StartNotUsedTask */
+void StartNotUsedTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
 	/* Infinite loop */
-	uint32_t semaCount_b;
-	unionFloatUint8_t BtnData;
-	messageFrame_t BtnMessageFrame;
 
 	for(;;)
 	{
-		semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
-		if(HAL_GPIO_ReadPin(Button_Port, Button_Pin))
-		{
-			/* Button released */
-			if (semaCount_b > 0)
-			{
-				/* Semaphore not yet acquired */
-				if( xSemaphoreTake( xButtonBinarySemaphore, SEMAPHORE_TAKE_WAIT ) == pdTRUE )
-				{
-					semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
-					memset((char *)BtnData.u8, 0, sizeof(BtnData.u8));
-					BtnData.u8[0]=FRAME_STATUS_OFF;
-					buildFrameToSend(FRAME_CMD_BTN_STATUS, BtnData, BtnMessageFrame);
-					if(pdTRUE == xQueueSend(UART_Queue_Handle, &BtnMessageFrame, QUEUE_SEND_WAIT))
-					{
-						osDelay(0);
-					}
-					else
-					{
-						sizeof_Data = sprintf((char *)Data, "B Q0 Send ERR");
-						xThread_Safe_UART_Transmit(Data, sizeof_Data);
-						xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
-					}
-				}
-			}
-		}
-		else
-		{
-			/* Button pushed */
-			if (semaCount_b == 0)
-			{
-				/* Semaphore not yet released */
-				if( xSemaphoreGive( xButtonBinarySemaphore ) == pdTRUE )
-				{
-					semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
-					memset((char *)BtnData.u8, 0, sizeof(BtnData.u8));
-					BtnData.u8[0]=FRAME_STATUS_ON;
-					buildFrameToSend(FRAME_CMD_BTN_STATUS, BtnData, BtnMessageFrame);
-					if(pdTRUE == xQueueSend(UART_Queue_Handle, &BtnMessageFrame, QUEUE_SEND_WAIT))
-					{
-						osDelay(0);
-					}
-					else
-					{
-						sizeof_Data = sprintf((char *)Data, "B Q1 Send ERR");
-						xThread_Safe_UART_Transmit(Data, sizeof_Data);
-						xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
-					}
-				}
-			}
-
-		}
-		osDelay(Button_Debounce_Delay);
+		osDelay(1);
 	}
   /* USER CODE END 5 */
 }
