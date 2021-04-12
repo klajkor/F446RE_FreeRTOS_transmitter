@@ -38,17 +38,18 @@ void Create_App_Tasks(void)
 	}
 
 	xReturned = xTaskCreate(
-			xTaskLEDswitcher,      		/* Function that implements the task. */
-			"xTaskLEDswitcher",         /* Text name for the task. */
-			STANDARD_TASK_STACK_SIZE,	/* Stack size in words, not bytes. */
-			( void * ) 1,    			/* Parameter passed into the task. */
-			PRIO_LEDswitcher, 			/* Priority at which the task is created. */
-			&xHandle_LEDswitcher );		/* Used to pass out the created task's handle. */
+			xTaskLEDswitcher,
+			"xTaskLEDswitcher",
+			STANDARD_TASK_STACK_SIZE,
+			( void * ) 1,
+			PRIO_LEDswitcher,
+			&xHandle_LEDswitcher );
 
 	if( xReturned != pdPASS )
 	{
 		Error_Handler();
 	}
+
 
 	xReturned = xTaskCreate(
 			xTaskADCvoltageRead,
@@ -57,7 +58,18 @@ void Create_App_Tasks(void)
 			( void * ) 1,
 			PRIO_ADCvoltageRead,
 			&xHandle_ADCvoltageRead );
+	if( xReturned != pdPASS )
+	{
+		Error_Handler();
+	}
 
+	xReturned = xTaskCreate(
+			xTaskTX_UART_msg,
+			"xTaskTX_UART_msg",
+			TX_UART_MSG_STACK_SIZE,
+			( void * ) 1,
+			PRIO_TX_UART_msg,
+			&xHandle_TX_UART_msg );
 	if( xReturned != pdPASS )
 	{
 		Error_Handler();
@@ -202,5 +214,18 @@ void xTaskADCvoltageRead(void *pvParameters)
 		}
 		//HAL_ADC_Stop(&ADC_Handle_ADCvoltageRead);
 		vTaskDelay(ADC_Voltage_Poll_Delay);
+	}
+}
+
+void xTaskTX_UART_msg(void *pvParameters)
+{
+	messageFrame_t receivedMessage;
+	for(;;)
+	{
+		if(xQueueReceive(UART_Queue_Handle, &receivedMessage, ( TickType_t ) QUEUE_REC_WAIT) == pdPASS)
+		{
+			xThread_Safe_UART_Transmit((uint8_t *)receivedMessage, sizeof(messageFrame_t));
+		}
+		vTaskDelay(1);
 	}
 }

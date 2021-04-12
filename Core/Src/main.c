@@ -64,13 +64,6 @@ const osThreadAttr_t buttonRead_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityHigh,
 };
-/* Definitions for transmitUARTmes */
-osThreadId_t transmitUARTmesHandle;
-const osThreadAttr_t transmitUARTmes_attributes = {
-  .name = "transmitUARTmes",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityAboveNormal,
-};
 /* Definitions for NotUsedQueue */
 osMessageQueueId_t NotUsedQueueHandle;
 const osMessageQueueAttr_t NotUsedQueue_attributes = {
@@ -89,7 +82,6 @@ static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_ADC1_Init(void);
 void StartButtonRead(void *argument);
-void StartTransmitUARTmessage(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -186,9 +178,6 @@ int main(void)
   /* Create the thread(s) */
   /* creation of buttonRead */
   buttonReadHandle = osThreadNew(StartButtonRead, NULL, &buttonRead_attributes);
-
-  /* creation of transmitUARTmes */
-  transmitUARTmesHandle = osThreadNew(StartTransmitUARTmessage, NULL, &transmitUARTmes_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
@@ -548,29 +537,6 @@ void StartButtonRead(void *argument)
 		osDelay(Button_Debounce_Delay);
 	}
   /* USER CODE END 5 */
-}
-
-/* USER CODE BEGIN Header_StartTransmitUARTmessage */
-/**
- * @brief Function implementing the transmitUARTmes thread.
- * @param argument: Not used
- * @retval None
- */
-/* USER CODE END Header_StartTransmitUARTmessage */
-void StartTransmitUARTmessage(void *argument)
-{
-  /* USER CODE BEGIN StartTransmitUARTmessage */
-	/* Infinite loop */
-	messageFrame_t receivedMessage;
-	for(;;)
-	{
-		if(xQueueReceive(UART_Queue_Handle, &receivedMessage, ( TickType_t ) QUEUE_REC_WAIT) == pdPASS)
-		{
-			xThread_Safe_UART_Transmit((uint8_t *)receivedMessage, sizeof(messageFrame_t));
-		}
-		osDelay(1);
-	}
-  /* USER CODE END StartTransmitUARTmessage */
 }
 
  /**

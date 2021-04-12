@@ -21,7 +21,9 @@
 #include "app_sema.h"
 #include "app_queue.h"
 
-#define STANDARD_TASK_STACK_SIZE 	( ( configSTACK_DEPTH_TYPE ) 128)
+#define STANDARD_TASK_STACK_SIZE 	( ( configSTACK_DEPTH_TYPE ) 128 * 2)
+#define TX_UART_MSG_STACK_SIZE 		( ( configSTACK_DEPTH_TYPE ) 128 * 4)
+
 #define PRIO_ButtonTestSignal 		( ( UBaseType_t ) 35 )
 #define PRIO_LEDswitcher 			( ( UBaseType_t ) 30 )
 #define PRIO_ADCvoltageRead			( ( UBaseType_t ) 25 )
@@ -36,5 +38,6 @@ void Set_ADC_Handle(ADC_HandleTypeDef new_ADC_Handle);
 void xTaskButtonTestSignal(void *pvParameters);
 void xTaskLEDswitcher(void *pvParameters);
 void xTaskADCvoltageRead(void *pvParameters);
+void xTaskTX_UART_msg(void *pvParameters);
 
 #endif /* INC_APP_TASKS_H_ */
