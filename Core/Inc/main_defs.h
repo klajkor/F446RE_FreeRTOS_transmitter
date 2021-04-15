@@ -42,7 +42,7 @@ uint8_t crlf[3];
 int sizeof_crlf;
 int sizeof_Data;
 
-BaseType_t xThread_Safe_UART_Transmit(uint8_t *pTransmitData, uint8_t data_size);
+UART_HandleTypeDef *UART_Handle_TX_Uart;
 
 #endif /* INC_MAIN_DEFS_H_ */
 

@@ -20,6 +20,7 @@
 #include "protocol.h"
 #include "app_sema.h"
 #include "app_queue.h"
+#include "app_uart.h"
 
 #define STANDARD_TASK_STACK_SIZE 	( ( configSTACK_DEPTH_TYPE ) 128 * 2)
 #define TX_UART_MSG_STACK_SIZE 		( ( configSTACK_DEPTH_TYPE ) 128 * 4)

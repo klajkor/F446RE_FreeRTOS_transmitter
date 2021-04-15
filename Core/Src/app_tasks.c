@@ -132,8 +132,8 @@ void xTaskLEDswitcher(void *pvParameters)
 				else
 				{
 					sizeof_Data = sprintf((char *)Data, "L Q1 Send ERR");
-					xThread_Safe_UART_Transmit(Data, sizeof_Data);
-					xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
+					xThread_Safe_UART_Transmit(Data, sizeof_Data, UART_Handle_TX_Uart);
+					xThread_Safe_UART_Transmit(crlf, sizeof_crlf, UART_Handle_TX_Uart);
 				}
 			}
 			else
@@ -149,8 +149,8 @@ void xTaskLEDswitcher(void *pvParameters)
 				else
 				{
 					sizeof_Data = sprintf((char *)Data, "L Q0 Send ERR");
-					xThread_Safe_UART_Transmit(Data, sizeof_Data);
-					xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
+					xThread_Safe_UART_Transmit(Data, sizeof_Data, UART_Handle_TX_Uart);
+					xThread_Safe_UART_Transmit(crlf, sizeof_crlf, UART_Handle_TX_Uart);
 				}
 			}
 			vTaskDelay(1);
@@ -167,10 +167,10 @@ void xTaskADCvoltageRead(void *pvParameters)
 	unionFloatUint8_t AdcData;
 	messageFrame_t AdcMessageFrame;
 	float fMilliVolt=0.0;
-	int size;
-	size=sprintf((char *)txt, "ADC task started");
-	xThread_Safe_UART_Transmit(txt, size);
-	xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
+	int sizeof_txt;
+	sizeof_txt=sprintf((char *)txt, "ADC task started");
+	xThread_Safe_UART_Transmit(txt, sizeof_txt, UART_Handle_TX_Uart);
+	xThread_Safe_UART_Transmit(crlf, sizeof_crlf, UART_Handle_TX_Uart);
 	/* ADC in single channel continuous conversion mode, EOC flag at the end of all conversions */
 	HAL_ADC_Start(&ADC_Handle_ADCvoltageRead);
 	for(;;)
@@ -186,9 +186,9 @@ void xTaskADCvoltageRead(void *pvParameters)
 			}
 			else
 			{
-				size=sprintf((char *)txt, "ADC Poll ERROR - %u", cycle);
-				xThread_Safe_UART_Transmit(txt, size);
-				xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
+				sizeof_txt=sprintf((char *)txt, "ADC Poll ERROR - %u", cycle);
+				xThread_Safe_UART_Transmit(txt, sizeof_txt, UART_Handle_TX_Uart);
+				xThread_Safe_UART_Transmit(crlf, sizeof_crlf, UART_Handle_TX_Uart);
 			}
 			vTaskDelay(1);
 		}
@@ -204,9 +204,9 @@ void xTaskADCvoltageRead(void *pvParameters)
 			}
 			else
 			{
-				size=sprintf((char *)txt, "ADC Q Send ERROR");
-				xThread_Safe_UART_Transmit(txt, size);
-				xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
+				sizeof_txt=sprintf((char *)txt, "ADC Q Send ERROR");
+				xThread_Safe_UART_Transmit(txt, sizeof_txt, UART_Handle_TX_Uart);
+				xThread_Safe_UART_Transmit(crlf, sizeof_crlf, UART_Handle_TX_Uart);
 			}
 		}
 		memset((char *)AdcData.u8, 0, sizeof(AdcData.u8));
@@ -219,9 +219,9 @@ void xTaskADCvoltageRead(void *pvParameters)
 		}
 		else
 		{
-			size=sprintf((char *)txt, "ADC Q Send ERROR");
-			xThread_Safe_UART_Transmit(txt, size);
-			xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
+			sizeof_txt=sprintf((char *)txt, "ADC Q Send ERROR");
+			xThread_Safe_UART_Transmit(txt, sizeof_txt, UART_Handle_TX_Uart);
+			xThread_Safe_UART_Transmit(crlf, sizeof_crlf, UART_Handle_TX_Uart);
 		}
 		//HAL_ADC_Stop(&ADC_Handle_ADCvoltageRead);
 		vTaskDelay(ADC_Voltage_Poll_Delay);
@@ -235,7 +235,7 @@ void xTaskTX_UART_msg(void *pvParameters)
 	{
 		if(xQueueReceive(UART_Queue_Handle, &receivedMessage, ( TickType_t ) QUEUE_REC_WAIT) == pdPASS)
 		{
-			xThread_Safe_UART_Transmit((uint8_t *)receivedMessage, sizeof(messageFrame_t));
+			xThread_Safe_UART_Transmit((uint8_t *)receivedMessage, sizeof(messageFrame_t), UART_Handle_TX_Uart);
 		}
 		vTaskDelay(1);
 	}
@@ -269,8 +269,8 @@ void xTaskButtonRead(void *pvParameters)
 					else
 					{
 						sizeof_Data = sprintf((char *)Data, "B Q0 Send ERR");
-						xThread_Safe_UART_Transmit(Data, sizeof_Data);
-						xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
+						xThread_Safe_UART_Transmit(Data, sizeof_Data, UART_Handle_TX_Uart);
+						xThread_Safe_UART_Transmit(crlf, sizeof_crlf, UART_Handle_TX_Uart);
 					}
 				}
 			}
@@ -294,8 +294,8 @@ void xTaskButtonRead(void *pvParameters)
 					else
 					{
 						sizeof_Data = sprintf((char *)Data, "B Q1 Send ERR");
-						xThread_Safe_UART_Transmit(Data, sizeof_Data);
-						xThread_Safe_UART_Transmit(crlf, sizeof_crlf);
+						xThread_Safe_UART_Transmit(Data, sizeof_Data, UART_Handle_TX_Uart);
+						xThread_Safe_UART_Transmit(crlf, sizeof_crlf, UART_Handle_TX_Uart);
 					}
 				}
 			}

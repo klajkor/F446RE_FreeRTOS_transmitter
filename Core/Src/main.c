@@ -34,6 +34,7 @@
 #include "app_queue.h"
 #include "app_tasks.h"
 #include "app_tests.h"
+#include "app_uart.h"
 
 /* USER CODE END Includes */
 
@@ -125,6 +126,9 @@ int main(void)
 	sprintf((char *)crlf, "\r\n");
 	sizeof_crlf = sizeof_crlf;
 	HAL_UART_Transmit(&huart2, crlf, sizeof_crlf, UART_TRANSMIT_MAX_DELAY);
+
+	/* Set the UART handle pointer used by xThread_Safe_UART_Transmit function (app_uart.c) */
+	Set_TX_UART_Handle(&huart2);
 
 	/* Set the ADC handle used by xTaskADCvoltageRead task */
 	Set_ADC_Handle(hadc1);
@@ -371,33 +375,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-
-BaseType_t xThread_Safe_UART_Transmit(uint8_t *pTransmitData, uint8_t data_size)
-{
-	BaseType_t Return_Value;
-	if ((pTransmitData == NULL) || (data_size == 0U))
-	{
-		return  pdFAIL;
-	}
-	if (xSemaphoreTake(UART_Mutex_Handle, portMAX_DELAY) == pdTRUE)
-	{
-		if(HAL_UART_Transmit(&huart2, pTransmitData, data_size, UART_TRANSMIT_MAX_DELAY) == HAL_OK)
-		{
-			Return_Value=pdPASS;
-		}
-		else
-		{
-			Return_Value=pdFAIL;
-		}
-		xSemaphoreGive(UART_Mutex_Handle);
-	}
-	else
-	{
-		Return_Value=pdFAIL;
-	}
-	return Return_Value;
-}
 
 
 /* USER CODE END 4 */
