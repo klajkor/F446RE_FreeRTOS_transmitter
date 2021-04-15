@@ -123,8 +123,8 @@ void xTaskLEDswitcher(void *pvParameters)
 			{
 				HAL_GPIO_WritePin(GPIOA, LD2_Pin, GPIO_PIN_SET);
 				memset((char *)LedData.u8, 0, sizeof(LedData.u8));
-				LedData.u8[0]=FRAME_STATUS_ON;
-				buildFrameToSend(FRAME_CMD_LED_STATUS, LedData, LedMessageFrame);
+				LedData.u8[0]=eLED_STATUS_ON;
+				buildFrameToSend(eFRAME_CMD_LED_STATUS, LedData, LedMessageFrame);
 				if(pdTRUE == xQueueSend(UART_Queue_Handle, &LedMessageFrame, QUEUE_SEND_WAIT))
 				{
 					vTaskDelay(0);
@@ -140,8 +140,8 @@ void xTaskLEDswitcher(void *pvParameters)
 			{
 				HAL_GPIO_WritePin(GPIOA, LD2_Pin, GPIO_PIN_RESET);
 				memset((char *)LedData.u8, 0, sizeof(LedData.u8));
-				LedData.u8[0]=FRAME_STATUS_OFF;
-				buildFrameToSend(FRAME_CMD_LED_STATUS, LedData, LedMessageFrame);
+				LedData.u8[0]=eLED_STATUS_OFF;
+				buildFrameToSend(eFRAME_CMD_LED_STATUS, LedData, LedMessageFrame);
 				if(pdTRUE == xQueueSend(UART_Queue_Handle, &LedMessageFrame, QUEUE_SEND_WAIT))
 				{
 					vTaskDelay(0);
@@ -197,7 +197,7 @@ void xTaskADCvoltageRead(void *pvParameters)
 		{
 			memset((char *)AdcData.u8, 0, sizeof(AdcData.u8));
 			AdcData.f=(float)raw*1.0;
-			buildFrameToSend(FRAME_CMD_ADC_RAW, AdcData, AdcMessageFrame);
+			buildFrameToSend(eFRAME_CMD_ADC_RAW, AdcData, AdcMessageFrame);
 			if(pdTRUE == xQueueSend(UART_Queue_Handle, &AdcMessageFrame, QUEUE_SEND_WAIT))
 			{
 				vTaskDelay(1);
@@ -212,7 +212,7 @@ void xTaskADCvoltageRead(void *pvParameters)
 		memset((char *)AdcData.u8, 0, sizeof(AdcData.u8));
 		fMilliVolt=(float)((ADC_VOLTAGE_REF_MILLIVOLT * raw)/ADC_RESOLUTION);
 		AdcData.f=fMilliVolt;
-		buildFrameToSend(FRAME_CMD_ADC_VALUE, AdcData, AdcMessageFrame);
+		buildFrameToSend(eFRAME_CMD_ADC_VALUE, AdcData, AdcMessageFrame);
 		if(pdTRUE == xQueueSend(UART_Queue_Handle, &AdcMessageFrame, QUEUE_SEND_WAIT))
 		{
 			vTaskDelay(1);
@@ -260,8 +260,8 @@ void xTaskButtonRead(void *pvParameters)
 				{
 					semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
 					memset((char *)BtnData.u8, 0, sizeof(BtnData.u8));
-					BtnData.u8[0]=FRAME_STATUS_OFF;
-					buildFrameToSend(FRAME_CMD_BTN_STATUS, BtnData, BtnMessageFrame);
+					BtnData.u8[0]=eBTN_STATUS_OFF;
+					buildFrameToSend(eFRAME_CMD_BTN_STATUS, BtnData, BtnMessageFrame);
 					if(pdTRUE == xQueueSend(UART_Queue_Handle, &BtnMessageFrame, QUEUE_SEND_WAIT))
 					{
 						vTaskDelay(0);
@@ -285,8 +285,8 @@ void xTaskButtonRead(void *pvParameters)
 				{
 					semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
 					memset((char *)BtnData.u8, 0, sizeof(BtnData.u8));
-					BtnData.u8[0]=FRAME_STATUS_ON;
-					buildFrameToSend(FRAME_CMD_BTN_STATUS, BtnData, BtnMessageFrame);
+					BtnData.u8[0]=eBTN_STATUS_ON;
+					buildFrameToSend(eFRAME_CMD_BTN_STATUS, BtnData, BtnMessageFrame);
 					if(pdTRUE == xQueueSend(UART_Queue_Handle, &BtnMessageFrame, QUEUE_SEND_WAIT))
 					{
 						vTaskDelay(0);

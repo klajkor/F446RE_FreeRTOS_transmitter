@@ -13,12 +13,6 @@
 
 #define FRAME_START_BYTE_1 		( 0x55 )
 #define FRAME_START_BYTE_2 		( 0x56 )
-#define FRAME_CMD_BTN_STATUS 	( 0x31 )
-#define FRAME_CMD_LED_STATUS 	( 0x32 )
-#define FRAME_CMD_ADC_VALUE 	( 0x33 )
-#define FRAME_CMD_ADC_RAW 		( 0x34 )
-#define FRAME_STATUS_OFF 		( 0x30 )
-#define FRAME_STATUS_ON 		( 0x31 )
 #define FRAME_EXT1 				( 0x00 )
 #define FRAME_EXT2 				( 0x00 )
 #define FRAME_STOP_BYTE_1 		( 0x0D )
@@ -40,11 +34,33 @@ typedef struct
 
 typedef uint8_t messageFrame_t[12];
 
-typedef enum {
+typedef enum protocolRetVal_enum {
     protocolRetVal_NOK = 0,
     protocolRetVal_OK,
     protocolRetVal_End
 } protocolRetVal_enum;
+
+typedef enum Frame_Cmd_enum {
+	eFRAME_CMD_BTN_STATUS 	= 0x42,
+	eFRAME_CMD_LED_STATUS 	= 0x4C,
+	eFRAME_CMD_ADC_VALUE  	= 0x41,
+	eFRAME_CMD_ADC_RAW		= 0x52
+} Frame_Cmd_enum;
+
+typedef enum Frame_Btn_Status_enum {
+	eBTN_STATUS_OFF = 0x30,
+	eBTN_STATUS_ON  = 0x31
+} Frame_Btn_Status_enum;
+
+typedef enum Frame_Led_Status_enum {
+	eLED_STATUS_OFF = 0x30,
+	eLED_STATUS_ON  = 0x31
+} Frame_Led_Status_enum;
+
+typedef enum Frame_Device_Id_enum {
+	eDEVICE_ID_F446RE 	= 0x21,
+	eDEVICE_ID_WB55		= 0x22
+} Frame_Device_Id_enum;
 
 
 protocolRetVal_enum buildFrameToSend(uint8_t frameCmdID, unionFloatUint8_t frameData, uint8_t *pFrame);

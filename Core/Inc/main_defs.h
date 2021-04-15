@@ -13,8 +13,10 @@
 #include <stdint.h>
 #include "FreeRTOS.h"
 
-#define Button_Port 				( GPIOC )
-#define Button_Pin  				( GPIO_PIN_0 ) // CN8 A5 pin
+//#define Button_Port 				( GPIOC )
+//#define Button_Pin  				( GPIO_PIN_0 ) // CN8 A5 pin
+#define Button_Port 				( B1_GPIO_Port )
+#define Button_Pin  				( B1_Pin )  // B1 user (blue) button
 //#define Signal_High_Duration 		( 241U ) // in millisec
 //#define Signal_Low_Duration 		( 33U ) // in millisec
 #define Button_Debounce_Delay 		( 80U ) // in millisec

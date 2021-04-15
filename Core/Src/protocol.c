@@ -8,6 +8,7 @@
 #include <string.h>
 #include "protocol.h"
 
+Frame_Device_Id_enum This_Device_ID = eDEVICE_ID_F446RE;
 
 protocolRetVal_enum buildFrameToSend(uint8_t frameCmdID, unionFloatUint8_t frameData, uint8_t *pFrame)
 {
@@ -21,13 +22,13 @@ protocolRetVal_enum buildFrameToSend(uint8_t frameCmdID, unionFloatUint8_t frame
 
 		pFrame[0]=FRAME_START_BYTE_1;
 		pFrame[1]=FRAME_START_BYTE_2;
-		pFrame[2]=frameCmdID;
+		pFrame[2]=This_Device_ID;
+		pFrame[3]=frameCmdID;
 		for(i=0;i<4;i++)
 		{
-			pFrame[i+3]=frameData.u8[i];
+			pFrame[i+4]=frameData.u8[i];
 		}
-		pFrame[7]=FRAME_EXT1;
-		pFrame[8]=FRAME_EXT2;
+		pFrame[8]=FRAME_EXT1;
 		crc_byte=gencrc8(pFrame, 9);
 		pFrame[9]=crc_byte;
 		pFrame[10]=FRAME_STOP_BYTE_1;
