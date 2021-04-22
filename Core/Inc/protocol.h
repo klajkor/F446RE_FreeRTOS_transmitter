@@ -20,7 +20,8 @@
 #define CRC_DEFAULT_VALUE		( 0xFF )
 #define CRC_POLYNOM				( 0x31 )
 
-typedef union {
+typedef union unionFloatUint8_t
+{
 	float f;
 	uint8_t u8[4];
 } unionFloatUint8_t;
@@ -32,7 +33,26 @@ typedef struct
 	char Payload[21];
 } structMessageBuffer_t;
 
+typedef struct structUARTmessage_t
+{
+	uint8_t Start_Byte_1;
+	uint8_t Start_Byte_2;
+	uint8_t Device_ID;
+	uint8_t Cmd_ID;
+	unionFloatUint8_t Data;
+	uint8_t Ext_Byte_1;
+	uint8_t Crc_Byte;
+	uint8_t Stop_Byte_1;
+	uint8_t Stop_Byte_2;
+} structUARTmessage_t;
+
 typedef uint8_t messageFrame_t[12];
+
+typedef union unionUARTmessage_t
+{
+	structUARTmessage_t structMessage;
+	messageFrame_t arrayMessage;
+} unionUARTmessage_t;
 
 typedef enum protocolRetVal_enum {
     protocolRetVal_NOK = 0,
@@ -63,7 +83,8 @@ typedef enum Frame_Device_Id_enum {
 } Frame_Device_Id_enum;
 
 
-protocolRetVal_enum buildFrameToSend(uint8_t frameCmdID, unionFloatUint8_t frameData, uint8_t *pFrame);
+protocolRetVal_enum buildFrameToSend_old(uint8_t frameCmdID, unionFloatUint8_t frameData, uint8_t *pFrame);
+protocolRetVal_enum buildFrameToSend(uint8_t frameCmdID, unionFloatUint8_t frameData, messageFrame_t pFrame);
 
 
 uint8_t gencrc8(uint8_t *data, uint8_t len);
