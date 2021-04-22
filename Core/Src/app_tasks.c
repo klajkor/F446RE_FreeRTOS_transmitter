@@ -252,7 +252,7 @@ void xTaskButtonRead(void *pvParameters)
 		semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
 		if(HAL_GPIO_ReadPin(Button_Port, Button_Pin))
 		{
-			/* Button released */
+			/* Button released, GPIO High */
 			if (semaCount_b > 0)
 			{
 				/* Semaphore not yet acquired */
@@ -277,10 +277,10 @@ void xTaskButtonRead(void *pvParameters)
 		}
 		else
 		{
-			/* Button pushed */
+			/* Button pushed, GPIO Low */
 			if (semaCount_b == 0)
 			{
-				/* Semaphore not yet released */
+				/* Semaphore taken already */
 				if( xSemaphoreGive( xButtonBinarySemaphore ) == pdTRUE )
 				{
 					semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
