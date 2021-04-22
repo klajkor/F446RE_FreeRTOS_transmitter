@@ -107,20 +107,22 @@ void xTaskButtonTestSignal(void *pvParameters)
 
 void xTaskLEDswitcher(void *pvParameters)
 {
-	uint32_t semaCount_b;
+	uint32_t ButtonSemaCount;
 	uint32_t prevCount;
 	unionFloatUint8_t LedData;
 	messageFrame_t LedMessageFrame;
-	semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
-	prevCount = semaCount_b;
+	ButtonSemaCount = uxSemaphoreGetCount(xButtonBinarySemaphore);
+	prevCount = ButtonSemaCount;
 	for(;;)
 	{
-		semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
-		if (semaCount_b != prevCount)
+		ButtonSemaCount = uxSemaphoreGetCount(xButtonBinarySemaphore);
+		if (ButtonSemaCount != prevCount)
 		{
-			prevCount = semaCount_b;
-			if (semaCount_b > 0)
+			/* There was a change */
+			prevCount = ButtonSemaCount;
+			if (ButtonSemaCount == 0)
 			{
+				/* Semaphore taken, meaning button pressed */
 				HAL_GPIO_WritePin(GPIOA, LD2_Pin, GPIO_PIN_SET);
 				memset((char *)LedData.u8, 0, sizeof(LedData.u8));
 				LedData.u8[0]=eLED_STATUS_ON;
@@ -138,6 +140,7 @@ void xTaskLEDswitcher(void *pvParameters)
 			}
 			else
 			{
+				/* Semaphore not taken, meaning button not pressed */
 				HAL_GPIO_WritePin(GPIOA, LD2_Pin, GPIO_PIN_RESET);
 				memset((char *)LedData.u8, 0, sizeof(LedData.u8));
 				LedData.u8[0]=eLED_STATUS_OFF;
@@ -243,22 +246,23 @@ void xTaskTX_UART_msg(void *pvParameters)
 
 void xTaskButtonRead(void *pvParameters)
 {
-	uint32_t semaCount_b;
+	uint32_t ButtonSemaCount;
 	unionFloatUint8_t BtnData;
 	messageFrame_t BtnMessageFrame;
 
 	for(;;)
 	{
-		semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
+		/* Read semaphore status. Zero means semaphore already taken */
+		ButtonSemaCount = uxSemaphoreGetCount(xButtonBinarySemaphore);
 		if(HAL_GPIO_ReadPin(Button_Port, Button_Pin))
 		{
-			/* Button released, GPIO High */
-			if (semaCount_b > 0)
+			/* GPIO High => Button Not Pressed */
+			if (ButtonSemaCount == 0)
 			{
-				/* Semaphore not yet acquired */
-				if( xSemaphoreTake( xButtonBinarySemaphore, SEMAPHORE_TAKE_WAIT ) == pdTRUE )
+				/* Semaphore taken */
+				if( xSemaphoreGive( xButtonBinarySemaphore ) == pdTRUE )
 				{
-					semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
+					ButtonSemaCount = uxSemaphoreGetCount(xButtonBinarySemaphore);
 					memset((char *)BtnData.u8, 0, sizeof(BtnData.u8));
 					BtnData.u8[0]=eBTN_STATUS_OFF;
 					buildFrameToSend(eFRAME_CMD_BTN_STATUS, BtnData, BtnMessageFrame);
@@ -277,13 +281,13 @@ void xTaskButtonRead(void *pvParameters)
 		}
 		else
 		{
-			/* Button pushed, GPIO Low */
-			if (semaCount_b == 0)
+			/* GPIO Low => Button Pressed */
+			if (ButtonSemaCount > 0)
 			{
-				/* Semaphore taken already */
-				if( xSemaphoreGive( xButtonBinarySemaphore ) == pdTRUE )
+				/* Semaphore Not Taken Yet */
+				if( xSemaphoreTake( xButtonBinarySemaphore, SEMAPHORE_TAKE_WAIT ) == pdTRUE )
 				{
-					semaCount_b = uxSemaphoreGetCount(xButtonBinarySemaphore);
+					ButtonSemaCount = uxSemaphoreGetCount(xButtonBinarySemaphore);
 					memset((char *)BtnData.u8, 0, sizeof(BtnData.u8));
 					BtnData.u8[0]=eBTN_STATUS_ON;
 					buildFrameToSend(eFRAME_CMD_BTN_STATUS, BtnData, BtnMessageFrame);
