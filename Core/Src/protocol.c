@@ -10,7 +10,7 @@
 
 Frame_Device_Id_enum This_Device_ID = eDEVICE_ID_F446RE;
 
-protocolRetVal_enum buildFrameToSend_old(uint8_t frameCmdID, unionFloatUint8_t frameData, uint8_t *pFrame)
+protocolRetVal_enum buildFrameToSend_old(uint8_t frameCmdID, unionFloatUint8_t frameData1, int8_t frameData2, uint8_t *pFrame)
 {
 	uint16_t i;
 	uint8_t crc_byte;
@@ -26,9 +26,9 @@ protocolRetVal_enum buildFrameToSend_old(uint8_t frameCmdID, unionFloatUint8_t f
 		pFrame[3]=frameCmdID;
 		for(i=0;i<4;i++)
 		{
-			pFrame[i+4]=frameData.u8[i];
+			pFrame[i+4]=frameData1.u8[i];
 		}
-		pFrame[8]=FRAME_EXT1;
+		pFrame[8]=frameData2;
 		crc_byte=gencrc8(pFrame, 9);
 		pFrame[9]=crc_byte;
 		pFrame[10]=FRAME_STOP_BYTE_1;
@@ -43,7 +43,7 @@ protocolRetVal_enum buildFrameToSend_old(uint8_t frameCmdID, unionFloatUint8_t f
 	return retval;
 }
 
-protocolRetVal_enum buildFrameToSend(uint8_t frameCmdID, unionFloatUint8_t frameData, messageFrame_t pFrame)
+protocolRetVal_enum buildFrameToSend(uint8_t frameCmdID, unionFloatUint8_t frameData1, int8_t frameData2, messageFrame_t pFrame)
 {
 	uint16_t i;
 	uint8_t crc_byte;
@@ -61,9 +61,9 @@ protocolRetVal_enum buildFrameToSend(uint8_t frameCmdID, unionFloatUint8_t frame
 		messageFrame.structMessage.Cmd_ID=frameCmdID;
 		for(i=0;i<4;i++)
 		{
-			messageFrame.structMessage.Data.u8[i]=frameData.u8[i];
+			messageFrame.structMessage.Data1.u8[i]=frameData1.u8[i];
 		}
-		messageFrame.structMessage.Ext_Byte_1=FRAME_EXT1;
+		messageFrame.structMessage.Data2=frameData2;
 		crc_byte=gencrc8(messageFrame.arrayMessage, 9);
 		messageFrame.structMessage.Crc_Byte=crc_byte;
 		messageFrame.structMessage.Stop_Byte_1=FRAME_STOP_BYTE_1;

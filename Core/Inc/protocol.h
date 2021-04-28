@@ -39,14 +39,14 @@ typedef struct structUARTmessage_t
 	uint8_t Start_Byte_2;
 	uint8_t Device_ID;
 	uint8_t Cmd_ID;
-	unionFloatUint8_t Data;
-	uint8_t Ext_Byte_1;
+	unionFloatUint8_t Data1;
+	int8_t Data2;
 	uint8_t Crc_Byte;
 	uint8_t Stop_Byte_1;
 	uint8_t Stop_Byte_2;
 } structUARTmessage_t;
 
-typedef uint8_t messageFrame_t[12];
+typedef uint8_t messageFrame_t[sizeof(structUARTmessage_t)];
 
 typedef union unionUARTmessage_t
 {
@@ -83,8 +83,8 @@ typedef enum Frame_Device_Id_enum {
 } Frame_Device_Id_enum;
 
 
-protocolRetVal_enum buildFrameToSend_old(uint8_t frameCmdID, unionFloatUint8_t frameData, uint8_t *pFrame);
-protocolRetVal_enum buildFrameToSend(uint8_t frameCmdID, unionFloatUint8_t frameData, messageFrame_t pFrame);
+protocolRetVal_enum buildFrameToSend_old(uint8_t frameCmdID, unionFloatUint8_t frameData1, int8_t frameData2, uint8_t *pFrame);
+protocolRetVal_enum buildFrameToSend(uint8_t frameCmdID, unionFloatUint8_t frameData1, int8_t frameData2, messageFrame_t pFrame);
 
 
 uint8_t gencrc8(uint8_t *data, uint8_t len);
