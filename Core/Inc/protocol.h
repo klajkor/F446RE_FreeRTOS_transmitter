@@ -13,10 +13,9 @@
 
 #define FRAME_START_BYTE_1 		( 0x55 )
 #define FRAME_START_BYTE_2 		( 0x56 )
-#define FRAME_EXT1 				( 0x00 )
-#define FRAME_EXT2 				( 0x00 )
 #define FRAME_STOP_BYTE_1 		( 0x0D )
 #define FRAME_STOP_BYTE_2 		( 0x0A )
+#define FRAME_CRC_BYTE_POS		( 9 )
 #define CRC_DEFAULT_VALUE		( 0xFF )
 #define CRC_POLYNOM				( 0x31 )
 
@@ -55,8 +54,8 @@ typedef union unionUARTmessage_t
 } unionUARTmessage_t;
 
 typedef enum protocolRetVal_enum {
-    protocolRetVal_NOK = 0,
-    protocolRetVal_OK,
+    protocolRetVal_OK = 0,
+    protocolRetVal_NOK,
     protocolRetVal_End
 } protocolRetVal_enum;
 
@@ -82,10 +81,19 @@ typedef enum Frame_Device_Id_enum {
 	eDEVICE_ID_WB55		= 0x22
 } Frame_Device_Id_enum;
 
+typedef enum messageValidateRetVal_enum {
+    validate_OK = 0,
+	validate_MsgLenError,
+	validate_StartByteError,
+	validate_StopByteError,
+	validate_CRCError
+} messageValidateRetVal_enum;
+
 
 protocolRetVal_enum buildFrameToSend_old(uint8_t frameCmdID, unionFloatUint8_t frameData1, int8_t frameData2, uint8_t *pFrame);
 protocolRetVal_enum buildFrameToSend(uint8_t frameCmdID, unionFloatUint8_t frameData1, int8_t frameData2, messageFrame_t pFrame);
 
+messageValidateRetVal_enum messageValidate(messageFrame_t msgFrame);
 
 uint8_t gencrc8(uint8_t *data, uint8_t len);
 

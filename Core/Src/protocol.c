@@ -64,7 +64,7 @@ protocolRetVal_enum buildFrameToSend(uint8_t frameCmdID, unionFloatUint8_t frame
 			messageFrame.structMessage.Data1.u8[i]=frameData1.u8[i];
 		}
 		messageFrame.structMessage.Data2=frameData2;
-		crc_byte=gencrc8(messageFrame.arrayMessage, 9);
+		crc_byte=gencrc8(messageFrame.arrayMessage, FRAME_CRC_BYTE_POS);
 		messageFrame.structMessage.Crc_Byte=crc_byte;
 		messageFrame.structMessage.Stop_Byte_1=FRAME_STOP_BYTE_1;
 		messageFrame.structMessage.Stop_Byte_2=FRAME_STOP_BYTE_2;
@@ -98,3 +98,61 @@ uint8_t gencrc8(uint8_t *data, uint8_t len)
 	return crc;
 }
 
+messageValidateRetVal_enum messageValidate(messageFrame_t msgFrame)
+{
+	messageValidateRetVal_enum retval;
+	uint8_t msgValid;
+	unionUARTmessage_t *pStruct;
+	pStruct=(unionUARTmessage_t *)msgFrame;
+	msgValid = 1;
+	if ( (msgValid == 1) && (pStruct->structMessage.Start_Byte_1 == FRAME_START_BYTE_1) )
+	{
+		msgValid = 1;
+	}
+	else
+	{
+		msgValid = 0;
+		retval = validate_StartByteError;
+	}
+	if ( (msgValid == 1) && (pStruct->structMessage.Start_Byte_2 == FRAME_START_BYTE_2) )
+	{
+		msgValid = 1;
+	}
+	else
+	{
+		msgValid = 0;
+		retval = validate_StartByteError;
+	}
+	if ( (msgValid == 1) && (pStruct->structMessage.Stop_Byte_1 == FRAME_STOP_BYTE_1) )
+	{
+		msgValid = 1;
+	}
+	else
+	{
+		msgValid = 0;
+		retval = validate_StartByteError;
+	}
+	if ( (msgValid == 1) && (pStruct->structMessage.Stop_Byte_2 == FRAME_STOP_BYTE_2) )
+	{
+		msgValid = 1;
+	}
+	else
+	{
+		msgValid = 0;
+		retval = validate_StartByteError;
+	}
+	if ( (msgValid == 1) && (pStruct->structMessage.Crc_Byte == gencrc8(msgFrame, FRAME_CRC_BYTE_POS)) )
+	{
+		msgValid = 1;
+	}
+	else
+	{
+		msgValid = 0;
+		retval = validate_CRCError;
+	}
+	if (msgValid == 1)
+	{
+		retval = validate_OK;
+	}
+	return retval;
+}
